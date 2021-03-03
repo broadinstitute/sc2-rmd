@@ -4,7 +4,7 @@ WORKDIR /
 
 COPY requirements-R.txt /docker/
 
-RUN R -e "install.packages(read.table('requirements-R.txt')$V1)"
+RUN R -e "install.packages(read.table('/docker/requirements-R.txt')$V1)"
 
-COPY . /docker
+COPY . /docker/
 
