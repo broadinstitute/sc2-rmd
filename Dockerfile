@@ -4,7 +4,7 @@ WORKDIR /
 
 COPY requirements-R.txt /docker/
 
-RUN R -e "install.packages(read.table('/docker/requirements-R.txt')$V1, repos='https://cloud.r-project.org')"
+RUN R -e "install.packages(read.table('/docker/requirements-R.txt')$V1, dependencies=TRUE, repos='https://cran.rstudio.com/')"
 
 COPY . /docker/
 
