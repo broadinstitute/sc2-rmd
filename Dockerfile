@@ -4,7 +4,7 @@ WORKDIR /
 
 COPY requirements-R.txt /docker/
 
-RUN for pkg in `cat /docker/requirements-R.txt`; do R -e "install.packages(c('$pkg'))"; done
+RUN R -e "install.packages(read.table('requirements-R.txt')$V1)"
 
 COPY . /docker
 
