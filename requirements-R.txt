@@ -1,0 +1,17 @@
+knitr
+rmarkdown
+pander
+tidyverse
+reticulate
+devtools
+ggplot2
+ggthemes
+plyr
+sf
+RColorBrewer
+viridis
+plotly
+plotly-shiny
+phytools
+ggtree
+tinytex
