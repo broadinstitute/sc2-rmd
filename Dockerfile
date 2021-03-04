@@ -4,7 +4,7 @@ WORKDIR /
 
 COPY requirements-R.txt /docker/
 
-RUN R -e "install.packages('ggplot2')"
+#RUN R -e "install.packages('ggplot2')"
 RUN R -e "install.packages(c('knitr', 'rmarkdown'), dependencies=TRUE, repos='https://cran.rstudio.com/')"
 RUN R -e "install.packages(read.table('/docker/requirements-R.txt')$V1, dependencies=TRUE, repos='https://cran.rstudio.com/')"
 
