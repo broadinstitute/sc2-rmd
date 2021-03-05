@@ -1,5 +1,4 @@
 knitr
-kable
 rmarkdown
 pander
 tidyverse
