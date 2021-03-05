@@ -1,0 +1,142 @@
+---
+title: "SARS-CoV-2 sequencing report"
+output: pdf_document
+params:
+  state: "Massachusetts"
+  assemblies_tsv: "~/viral/t/reports/assemblies.tsv"
+  collab_ids_tsv: "~/viral/t/reports/collab_ids.tsv"
+  date: !r Sys.Date()
+  printcode: FALSE
+  min_unambig: 24000
+---
+
+```{r, setup, echo=FALSE, message=FALSE, warning=FALSE}
+#knitr::opts_chunk$set(echo = params$printcode)
+library(ggplot2)
+library(plyr)
+library(dplyr)
+library(tidyverse)
+library(viridis)
+library(lubridate)
+library(reticulate)
+library(plotly)
+```
+
+```{r, load-data, echo=FALSE, message=FALSE, warning=FALSE}
+df_assemblies = read.table(params$assemblies_tsv, sep='\t', header=TRUE)
+collab_ids = read.table(params$collab_ids_tsv, sep='\t', header=TRUE)[c('external_id', 'collaborator_id')]
+collab_ids <- rename(collab_ids, sample = external_id)
+```
+
+
+```{r, transform-data, echo=FALSE, message=FALSE, warning=FALSE}
+
+# fix dates
+df_assemblies$run_date <- as.Date(df_assemblies$run_date)
+df_assemblies$collection_date <- as.Date(df_assemblies$collection_date)
+
+# fix missing data in purpose_of_sequencing
+df_assemblies[is.na(df_assemblies$purpose_of_sequencing)] <- 'Missing'
+# todo: replace '' with 'Missing'
+
+# derived columns: collection_epiweek, run_epiweek
+#df_assemblies$collection_epiweek <- lapply(dateToEpiweek(df_assemblies$collection_date), function(i) paste0(i$year, 'W', i$weekno))
+#df_assemblies$run_epiweek <- lapply(dateToEpiweek(df_assemblies$run_date), function(i) paste0(i$year, 'W', i$weekno))
+#df_assemblies$collection_epiweek_end <- lapply(dateToEpiweek(df_assemblies$collection_date), function(i) epiweekToDate(i$year, i$weekno)$d1)
+#df_assemblies$run_epiweek_end <- lapply(dateToEpiweek(df_assemblies$run_date), function(i) epiweekToDate(i$year, i$weekno)$d1)
+
+# derived column: sample_age_at_runtime
+df_assemblies$sample_age_at_runtime <- df_assemblies$run_date - df_assemblies$collection_date
+
+# derived column: genome_status
+df_assemblies <- mutate(df_assemblies, genome_status = case_when(
+	assembly_length_unambiguous < params$min_unambig ~ "failed_sequencing",
+	vadr_num_alerts > 0 ~ "failed_annotation",
+	TRUE ~ "submittable"
+))
+df_assemblies$genome_status = factor(df_assemblies$genome_status, levels=c('failed_sequencing', 'failed_annotation', 'submittable'))
+
+# derived columns: geo_country, geo_state, geo_locality
+#df_assemblies.loc[:,'geo_country'] = list(g.split(': ')[0] if not pd.isna(g) else '' for g in df_assemblies.loc[:,'geo_loc_name'])
+#df_assemblies.loc[:,'geo_state'] = list(g.split(': ')[1].split(', ')[0] if not pd.isna(g) else '' for g in df_assemblies.loc[:,'geo_loc_name'])
+#df_assemblies.loc[:,'geo_locality'] = list(g.split(': ')[1].split(', ')[1] if not pd.isna(g) and ', ' in g else '' for g in df_assemblies.loc[:,'geo_loc_name'])
+
+df_assemblies$geo_country <- sapply(str_split(df_assemblies$geo_loc_name, ": "), function(x) x[1])
+df_assemblies$geo_state <- sapply(sapply(str_split(df_assemblies$geo_loc_name, ": "), function(x) x[2]), function(y) y[1])
+df_assemblies$geo_locality <- sapply(sapply(str_split(df_assemblies$geo_loc_name, ": "), function(x) x[2]), function(y) y[2])
+
+# join column: collaborator_id
+df_assemblies <- merge(df_assemblies, collab_ids, by="sample", all.x=TRUE)
+
+```
+
+```{r, subset-data, echo=FALSE, message=FALSE, warning=FALSE}
+df <- subset(df_assemblies, geo_state == params$state)
+df_good <- subset(df, genome_status != "failed_sequencing")
+df_vocs <- subset(df_good, pango_lineage %in% c('B.1.1.7', 'B.1.351', 'P.1'))
+
+```
+
+
+# Summary of SARS-CoV-2 Sequencing by the Broad Institute
+
+The Broad Institute Viral Genomics group, in partnership with the Broad Genomics Platform and
+Data Sciences Platform, has been engaged in viral sequencing of COVID-19 patients since March 2020.
+This reports describes samples sequenced since October 2020 (we will backfill with more historical data
+later).
+
+This report was generated for the state of **`r params$state`** on **`r params$date`**.
+
+
+
+## Sequencing yield over time
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(df) + geom_histogram(aes(run_date, fill=genome_status)) +
+	scale_fill_brewer(palette='Pastel1')
+```
+
+This describes the total number of patient samples sequenced in this data set,
+plotted by the date of the sequencing run in our lab (by CDC epiweek).
+
+"Submittable" genomes pass all QC checks and are quickly released to public genome repositories.
+"Failed sequencing" are samples that failed to produce at least `r params$min_unambig` unambiguous base pairs of
+viral genome. Raw data from these samples are submitted to NCBI's SRA database, but the genomes
+are not used for any analyses. "Failed annotation" are samples that produced a sufficiently complete
+genome, but did not pass NCBI's VADR quality checks.
+
+
+## Sequencing date vs collection date
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(df) + geom_point(aes(
+  x=collection_date, y=run_date, color=as.numeric(run_date - collection_date, units="days"))) +
+  scale_color_viridis(name='sample_age (days)', option='plasma', discrete=FALSE)
+```
+
+This plot describes the "timeliness" of the sequencing run for the purpose of real-time surveillance of circulating lineages and variants of interest. Note that this plot likely includes many samples that were sequenced for non-surveilance purposes.
+
+
+## Genetic distance root-to-tip vs sample collection date
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(df_good) + geom_point(aes(
+  x=collection_date, y=dist_to_ref_snps, alpha=0.8, color=nextclade_clade)) + scale_colour_brewer(name='Nextclade Clade', palette='Paired')
+```
+
+A "root-to-tip plot" plots the genetic distance of each sample from Wuhan Hu-1 against the date it was collected. It is generally somewhat linear. Outliers on this plot may be indicative of laboratory or metadata errors, or of evolutionarily unusual lineages (such as B.1.1.7).
+
+
+## Nextclade phylogenetic classifications vs sample collection date
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+data.frame(date=seq(as.Date("2020/1/1"), Sys.Date(), by="day")) %>% 
+    mutate(week=isoweek(date),year=year(date)) %>% 
+    ddply(.(year,week), mutate, epiweek_end=max(date)) ->
+    week_calendar
+df_dates <- merge(df_good, week_calendar, by.x='collection_date', by.y='date')
+ggplot(df_dates) + geom_histogram(aes(epiweek_end, fill=nextclade_clade)) +
+	scale_fill_brewer(palette='Set1')
+```
+
+This shows the breakdown of major phylogenetic clades over time, using the Nextclade naming system. Variants of Concern (VoCs) are highlighted as specially named Nextclade clades. Nextclade clade 20I/501Y.V1 corresponds to PANGO lineage B.1.1.7, 20H/501Y.V2 corresponds to B.1.351, and 20J/501Y.V3 corresponds to P.1.
