@@ -6,7 +6,6 @@ params:
   assemblies_tsv: "~/viral/t/reports/assemblies.tsv"
   collab_ids_tsv: "~/viral/t/reports/collab_ids.tsv"
   date: !r Sys.Date()
-  printcode: FALSE
   min_unambig: 24000
 ---
 
@@ -117,7 +116,7 @@ This describes sequencing attempts over time, broken down by the sample source l
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 ggplot(df) + geom_point(aes(
   x=collection_date, y=run_date, color=as.numeric(run_date - collection_date, units="days"))) +
-  scale_color_viridis(name='sample_age (days)', option='plasma', discrete=FALSE)
+  scale_color_viridis(name='sample_age (days)', option='plasma', discrete=FALSE) + geom_abline()
 ```
 
 This plot describes the "timeliness" of the sequencing run for the purpose of real-time surveillance of circulating lineages and variants of interest. Note that this plot likely includes many samples that were sequenced for non-surveilance purposes.
