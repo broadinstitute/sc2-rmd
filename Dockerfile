@@ -3,10 +3,10 @@ FROM ubuntu:focal-20210217
 LABEL maintainer "Daniel Park <dpark@broadinstitute.org>"
 
 # Set default locale to en_US.UTF-8
-ENV LANG="en_US.UTF-8" LANGUAGE="en_US:en" LC_ALL="en_US.UTF-8" DEBIAN_FRONTEND=noninteractive
+ENV LANG="en_US.UTF-8" LANGUAGE="en_US:en" LC_ALL="en_US.UTF-8"
 
-# non-interactive session
-RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
+# non-interactive session just for build
+ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && \
   apt-get -y -qq install \
