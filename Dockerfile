@@ -1,10 +1,16 @@
 FROM ubuntu:focal-20210217
 
-WORKDIR /
+LABEL maintainer "Daniel Park <dpark@broadinstitute.org>"
+
+# Set default locale to en_US.UTF-8
+ENV LANG="en_US.UTF-8" LANGUAGE="en_US:en" LC_ALL="en_US.UTF-8" DEBIAN_FRONTEND=noninteractive
+
+# non-interactive session
+RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
 
 RUN apt-get update && \
-  apt-get -y install \
-    less git wget curl jq zstd \
+  apt-get -y -qq install \
+    less git wget curl jq zstd parallel \
     gnupg libssl-dev libcurl4-openssl-dev \
     pandoc pandoc-citeproc \
     libxml2 libxml2-dev \
@@ -27,3 +33,6 @@ RUN apt-get update && \
 
 COPY . /docker/
 
+WORKDIR /
+
+CMD ["/bin/bash"]
