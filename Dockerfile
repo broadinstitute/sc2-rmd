@@ -5,8 +5,15 @@ LABEL maintainer "Daniel Park <dpark@broadinstitute.org>"
 # non-interactive session just for build
 ARG DEBIAN_FRONTEND=noninteractive
 
+# update apt database and install R apt repo
 RUN apt-get update && \
-  apt-get -y -qq install \
+  apt-get -y -qq install software-properties-common && \
+  apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9 && \
+  add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu focal-cran40/' && \
+  apt-get update
+
+# install all desired packages
+RUN apt-get -y -qq install \
     less nano vim git wget curl jq zstd parallel locales \
     gnupg libssl-dev libcurl4-openssl-dev \
     pandoc pandoc-citeproc \
