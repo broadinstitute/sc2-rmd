@@ -49,28 +49,11 @@ collab_ids <- rename(collab_ids, sample = external_id)
 
 ```{r, transform-data, echo=FALSE}
 
-# fix dates
-df_assemblies$run_date <- as.Date(df_assemblies$run_date)
-df_assemblies$collection_date <- as.Date(df_assemblies$collection_date)
-
-# fix missing data in purpose_of_sequencing
-df_assemblies[is.na(df_assemblies$purpose_of_sequencing)] <- 'Missing'
-# todo: replace '' with 'Missing'
-
-# derived columns: collection_epiweek, run_epiweek
-#df_assemblies$collection_epiweek <- lapply(dateToEpiweek(df_assemblies$collection_date), function(i) paste0(i$year, 'W', i$weekno))
-#df_assemblies$run_epiweek <- lapply(dateToEpiweek(df_assemblies$run_date), function(i) paste0(i$year, 'W', i$weekno))
-#df_assemblies$collection_epiweek_end <- lapply(dateToEpiweek(df_assemblies$collection_date), function(i) epiweekToDate(i$year, i$weekno)$d1)
-#df_assemblies$run_epiweek_end <- lapply(dateToEpiweek(df_assemblies$run_date), function(i) epiweekToDate(i$year, i$weekno)$d1)
-
-# derived column: sample_age_at_runtime
-df_assemblies$sample_age_at_runtime <- df_assemblies$run_date - df_assemblies$collection_date
-
 # derived column: genome_status
 df_assemblies <- mutate(df_assemblies, genome_status = case_when(
-	assembly_length_unambiguous < params$min_unambig ~ "failed_sequencing",
-	vadr_num_alerts > 0 ~ "failed_annotation",
-	TRUE ~ "submittable"
+  assembly_length_unambiguous < params$min_unambig ~ "failed_sequencing",
+  vadr_num_alerts > 0 ~ "failed_annotation",
+  TRUE ~ "submittable"
 ))
 df_assemblies$genome_status = factor(df_assemblies$genome_status, levels=c('failed_sequencing', 'failed_annotation', 'submittable'))
 
@@ -82,6 +65,17 @@ df_assemblies$geo_locality <- sapply(sapply(str_split(df_assemblies$geo_loc_name
 # subset to state
 df_assemblies <- subset(df_assemblies, geo_state == params$state)
 
+# fix dates
+df_assemblies$run_date <- as.Date(df_assemblies$run_date, tryFormats="%Y-%m-%d")
+df_assemblies$collection_date <- as.Date(df_assemblies$collection_date, tryFormats="%Y-%m-%d")
+
+# fix missing data in purpose_of_sequencing
+df_assemblies[is.na(df_assemblies$purpose_of_sequencing)] <- 'Missing'
+# todo: replace '' with 'Missing'
+
+# derived column: sample_age_at_runtime
+df_assemblies$sample_age_at_runtime <- df_assemblies$run_date - df_assemblies$collection_date
+
 # join column: collaborator_id
 df_assemblies <- merge(df_assemblies, collab_ids, by="sample", all.x=TRUE)
 
@@ -89,7 +83,7 @@ df_assemblies <- merge(df_assemblies, collab_ids, by="sample", all.x=TRUE)
 df_good <- subset(df_assemblies, genome_status != "failed_sequencing")
 
 # CDC epiweeks
-data.frame(date=seq(as.Date("2020/1/1"), Sys.Date()+7, by="day")) %>%
+data.frame(date=seq(as.Date("2020-01-01", tryFormats="%Y-%m-%d"), Sys.Date()+7, by="day")) %>%
     mutate(week=epiweek(date),year=year(date)) %>%
     ddply(.(year,week), mutate, epiweek_end=max(date)) ->
     week_calendar
@@ -107,7 +101,7 @@ This reports summarizes samples recent sequencing activity in the state of **`r 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 df_run_weeks %>%
   ddply(.(epiweek_end,genome_status), summarise, n=length(assembly_fasta)) %>%
-  subset(epiweek_end >= as.Date("2021-01-01")) %>%
+  subset(epiweek_end >= as.Date("2021-01-01", tryFormats="%Y-%m-%d")) %>%
   pivot_wider(names_from=genome_status, values_from=n) -> seq_by_week
 seq_by_week$attempted <- seq_by_week$failed_sequencing + seq_by_week$failed_annotation + seq_by_week$submittable
 seq_by_week$genomes <- seq_by_week$failed_annotation + seq_by_week$submittable

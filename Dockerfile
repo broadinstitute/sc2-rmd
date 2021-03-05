@@ -23,23 +23,23 @@ RUN apt-get -y -qq install \
     fonts-roboto \
     python3 python3-pandas python3-plotly \
     r-base r-base-dev \
-    r-cran-devtools \
-    r-cran-tidyverse \
-    r-cran-sf \
-    r-cran-reticulate \
-    r-cran-rmarkdown r-cran-knitr r-cran-tinytex \
-    r-cran-ggplot2 r-cran-ggthemes \
-    r-cran-dplyr r-cran-plyr \
-    r-cran-plotly \
-    r-cran-rcolorbrewer r-cran-viridis r-cran-viridislite \
-    r-cran-phytools \
   && apt-get clean
 
 # Set default locale to en_US.UTF-8
 RUN locale-gen en_US.UTF-8
 ENV LANG="en_US.UTF-8" LANGUAGE="en_US:en" LC_ALL="en_US.UTF-8"
 
+# Install R packages
+RUN R -e "install.packages(c( \
+  'devtools', 'tidyverse', 'sf', \
+  'knitr', 'rmarkdown', 'tinytex', 'reticulate', \
+  'ggplot2', 'ggthemes', 'dplyr', 'plyr', \
+  'plotly', \
+  'RColorBrewer', 'viridis', 'viridisLite', \
+  'phytools' ))"
 
+
+# Bring in other supporting files
 COPY . /docker/
 
 WORKDIR /
