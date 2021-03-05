@@ -2,15 +2,12 @@ FROM ubuntu:focal-20210217
 
 LABEL maintainer "Daniel Park <dpark@broadinstitute.org>"
 
-# Set default locale to en_US.UTF-8
-ENV LANG="en_US.UTF-8" LANGUAGE="en_US:en" LC_ALL="en_US.UTF-8"
-
 # non-interactive session just for build
 ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && \
   apt-get -y -qq install \
-    less git wget curl jq zstd parallel \
+    less nano vim git wget curl jq zstd parallel locales \
     gnupg libssl-dev libcurl4-openssl-dev \
     pandoc pandoc-citeproc \
     libxml2 libxml2-dev \
@@ -30,6 +27,11 @@ RUN apt-get update && \
     r-cran-rcolorbrewer r-cran-viridis r-cran-viridislite \
     r-cran-phytools \
   && apt-get clean
+
+# Set default locale to en_US.UTF-8
+RUN locale-gen en_US.UTF-8
+ENV LANG="en_US.UTF-8" LANGUAGE="en_US:en" LC_ALL="en_US.UTF-8"
+
 
 COPY . /docker/
 
