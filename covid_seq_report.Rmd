@@ -2,6 +2,7 @@
 title: "SARS-CoV-2 sequencing report"
 output: pdf_document
 params:
+  sequencing_lab: "Broad Institute"
   state: "Massachusetts"
   assemblies_tsv: "~/viral/t/reports/assemblies.tsv"
   collab_ids_tsv: "~/viral/t/reports/collab_ids.tsv"
@@ -61,8 +62,14 @@ df_assemblies$geo_country <- sapply(str_split(df_assemblies$geo_loc_name, ": "),
 df_assemblies$geo_state <- sapply(sapply(str_split(df_assemblies$geo_loc_name, ": "), function(x) x[2]), function(y) y[1])
 df_assemblies$geo_locality <- sapply(sapply(str_split(df_assemblies$geo_loc_name, ": "), function(x) x[2]), function(y) y[2])
 
+# subset to state
+df_assemblies <- subset(df_assemblies, geo_state == params$state)
+
 # join column: collaborator_id
 df_assemblies <- merge(df_assemblies, collab_ids, by="sample", all.x=TRUE)
+
+# subset to good
+df_good <- subset(df_assemblies, genome_status != "failed_sequencing")
 
 # CDC epiweeks
 data.frame(date=seq(as.Date("2020/1/1"), Sys.Date()+7, by="day")) %>%
@@ -73,14 +80,8 @@ df_collection_weeks <- merge(df_assemblies, week_calendar, by.x='collection_date
 df_run_weeks <- merge(df_assemblies, week_calendar, by.x='run_date', by.y='date', all.x=TRUE)
 ```
 
-```{r, subset-data, echo=FALSE}
-df <- subset(df_assemblies, geo_state == params$state)
-df_good <- subset(df_assemblies, genome_status != "failed_sequencing")
-df_vocs <- subset(df_good, pango_lineage %in% c('B.1.1.7', 'B.1.351', 'P.1'))
-```
 
-
-# Summary of SARS-CoV-2 Sequencing by the Broad Institute
+# Summary of SARS-CoV-2 Sequencing by the `r params$sequencing_lab`
 
 The Broad Institute Viral Genomics group, in partnership with the Broad Genomics Platform and
 Data Sciences Platform, has been engaged in viral sequencing of COVID-19 patients since March 2020.
@@ -94,7 +95,7 @@ This report was generated for the state of **`r params$state`** on **`r params$d
 ## Sequencing yield over time
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
-ggplot(df) + geom_histogram(aes(run_date, fill=genome_status)) +
+ggplot(df_assemblies) + geom_histogram(aes(run_date, fill=genome_status)) +
 	scale_fill_brewer(palette='Pastel1')
 ```
 
@@ -112,7 +113,6 @@ genome, but did not pass NCBI's VADR quality checks.
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 df_run_weeks %>%
-  subset(geo_state == params$state) %>%
   ddply(.(epiweek_end,genome_status), summarise, n=length(assembly_fasta)) %>%
   subset(epiweek_end >= as.Date("2021-01-01")) %>%
   pivot_wider(names_from=genome_status, values_from=n) -> seq_by_week
@@ -128,7 +128,7 @@ kable(seq_by_week)
 ## Sequencing sources over time
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
-ggplot(df) + geom_histogram(aes(run_date, fill=collected_by)) +
+ggplot(df_assemblies) + geom_histogram(aes(run_date, fill=collected_by)) +
 	scale_fill_brewer(palette='Pastel1')
 ```
 
@@ -138,7 +138,7 @@ This describes sequencing attempts over time, broken down by the sample source l
 ## Sequencing date vs collection date
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
-ggplot(df) + geom_point(aes(
+ggplot(df_assemblies) + geom_point(aes(
   x=collection_date, y=run_date, color=as.numeric(run_date - collection_date, units="days"))) +
   scale_color_viridis(name='sample_age (days)', option='plasma', discrete=FALSE) + geom_abline()
 ```
@@ -174,7 +174,6 @@ reportable_vocs <- c('B.1.1.7', 'B.1.351', 'P.1')
 df_collection_weeks %>%
   subset(genome_status != 'failed_sequencing') %>%
   subset(pango_lineage %in% reportable_vocs) %>%
-  subset(geo_state == params$state) %>%
   subset(!is.na(epiweek_end)) %>%
   ddply(.(epiweek_end,pango_lineage), summarise, n=length(assembly_fasta)) %>%
   pivot_wider(names_from=pango_lineage, values_from=n, values_fill=0) %>%
