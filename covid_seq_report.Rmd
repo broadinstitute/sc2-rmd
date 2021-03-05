@@ -57,10 +57,6 @@ df_assemblies <- mutate(df_assemblies, genome_status = case_when(
 df_assemblies$genome_status = factor(df_assemblies$genome_status, levels=c('failed_sequencing', 'failed_annotation', 'submittable'))
 
 # derived columns: geo_country, geo_state, geo_locality
-#df_assemblies.loc[:,'geo_country'] = list(g.split(': ')[0] if not pd.isna(g) else '' for g in df_assemblies.loc[:,'geo_loc_name'])
-#df_assemblies.loc[:,'geo_state'] = list(g.split(': ')[1].split(', ')[0] if not pd.isna(g) else '' for g in df_assemblies.loc[:,'geo_loc_name'])
-#df_assemblies.loc[:,'geo_locality'] = list(g.split(': ')[1].split(', ')[1] if not pd.isna(g) and ', ' in g else '' for g in df_assemblies.loc[:,'geo_loc_name'])
-
 df_assemblies$geo_country <- sapply(str_split(df_assemblies$geo_loc_name, ": "), function(x) x[1])
 df_assemblies$geo_state <- sapply(sapply(str_split(df_assemblies$geo_loc_name, ": "), function(x) x[2]), function(y) y[1])
 df_assemblies$geo_locality <- sapply(sapply(str_split(df_assemblies$geo_loc_name, ": "), function(x) x[2]), function(y) y[2])
@@ -104,6 +100,16 @@ plotted by the date of the sequencing run in our lab (by CDC epiweek).
 viral genome. Raw data from these samples are submitted to NCBI's SRA database, but the genomes
 are not used for any analyses. "Failed annotation" are samples that produced a sufficiently complete
 genome, but did not pass NCBI's VADR quality checks.
+
+
+## Sequencing sources over time
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(df) + geom_histogram(aes(run_date, fill=collected_by)) +
+	scale_fill_brewer(palette='Pastel1')
+```
+
+This describes sequencing attempts over time, broken down by the sample source laboratory.
 
 
 ## Sequencing date vs collection date
