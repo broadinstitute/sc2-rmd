@@ -11,6 +11,7 @@ params:
 
 ```{r, setup, echo=FALSE, message=FALSE, warning=FALSE}
 #knitr::opts_chunk$set(echo = params$printcode)
+library(knitr)
 library(ggplot2)
 library(plyr)
 library(dplyr)
@@ -21,14 +22,14 @@ library(reticulate)
 library(plotly)
 ```
 
-```{r, load-data, echo=FALSE, message=FALSE, warning=FALSE}
+```{r, load-data, echo=FALSE}
 df_assemblies = read.table(params$assemblies_tsv, sep='\t', header=TRUE)
 collab_ids = read.table(params$collab_ids_tsv, sep='\t', header=TRUE)[c('external_id', 'collaborator_id')]
 collab_ids <- rename(collab_ids, sample = external_id)
 ```
 
 
-```{r, transform-data, echo=FALSE, message=FALSE, warning=FALSE}
+```{r, transform-data, echo=FALSE}
 
 # fix dates
 df_assemblies$run_date <- as.Date(df_assemblies$run_date)
@@ -63,13 +64,19 @@ df_assemblies$geo_locality <- sapply(sapply(str_split(df_assemblies$geo_loc_name
 # join column: collaborator_id
 df_assemblies <- merge(df_assemblies, collab_ids, by="sample", all.x=TRUE)
 
+# CDC epiweeks
+data.frame(date=seq(as.Date("2020/1/1"), Sys.Date()+7, by="day")) %>%
+    mutate(week=epiweek(date),year=year(date)) %>%
+    ddply(.(year,week), mutate, epiweek_end=max(date)) ->
+    week_calendar
+df_collection_weeks <- merge(df_assemblies, week_calendar, by.x='collection_date', by.y='date', all.x=TRUE)
+df_run_weeks <- merge(df_assemblies, week_calendar, by.x='run_date', by.y='date', all.x=TRUE)
 ```
 
-```{r, subset-data, echo=FALSE, message=FALSE, warning=FALSE}
+```{r, subset-data, echo=FALSE}
 df <- subset(df_assemblies, geo_state == params$state)
-df_good <- subset(df, genome_status != "failed_sequencing")
+df_good <- subset(df_assemblies, genome_status != "failed_sequencing")
 df_vocs <- subset(df_good, pango_lineage %in% c('B.1.1.7', 'B.1.351', 'P.1'))
-
 ```
 
 
@@ -100,6 +107,23 @@ viral genome. Raw data from these samples are submitted to NCBI's SRA database, 
 are not used for any analyses. "Failed annotation" are samples that produced a sufficiently complete
 genome, but did not pass NCBI's VADR quality checks.
 
+
+## Sequencing activity by CDC epiweek of sequencing run date
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+df_run_weeks %>%
+  subset(geo_state == params$state) %>%
+  ddply(.(epiweek_end,genome_status), summarise, n=length(assembly_fasta)) %>%
+  subset(epiweek_end >= as.Date("2021-01-01")) %>%
+  pivot_wider(names_from=genome_status, values_from=n) -> seq_by_week
+seq_by_week$attempted <- seq_by_week$failed_sequencing + seq_by_week$failed_annotation + seq_by_week$submittable
+seq_by_week$genomes <- seq_by_week$failed_annotation + seq_by_week$submittable
+seq_by_week <- seq_by_week %>%
+  subset(select = c(epiweek_end, attempted, genomes, submittable)) %>%
+  rename(sequencing_epiweek_end = epiweek_end)
+#seq_by_week
+kable(seq_by_week)
+```
 
 ## Sequencing sources over time
 
@@ -135,13 +159,26 @@ A "root-to-tip plot" plots the genetic distance of each sample from Wuhan Hu-1 a
 ## Nextclade phylogenetic classifications vs sample collection date
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
-data.frame(date=seq(as.Date("2020/1/1"), Sys.Date(), by="day")) %>% 
-    mutate(week=isoweek(date),year=year(date)) %>% 
-    ddply(.(year,week), mutate, epiweek_end=max(date)) ->
-    week_calendar
-df_dates <- merge(df_good, week_calendar, by.x='collection_date', by.y='date')
-ggplot(df_dates) + geom_histogram(aes(epiweek_end, fill=nextclade_clade)) +
+ggplot(subset(df_collection_weeks, genome_status != "failed_sequencing")) +
+  geom_histogram(aes(epiweek_end, fill=nextclade_clade)) +
 	scale_fill_brewer(palette='Set1')
 ```
 
 This shows the breakdown of major phylogenetic clades over time, using the Nextclade naming system. Variants of Concern (VoCs) are highlighted as specially named Nextclade clades. Nextclade clade 20I/501Y.V1 corresponds to PANGO lineage B.1.1.7, 20H/501Y.V2 corresponds to B.1.351, and 20J/501Y.V3 corresponds to P.1.
+
+
+## Reportable VoC counts by CDC epiweek of sample collection.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+reportable_vocs <- c('B.1.1.7', 'B.1.351', 'P.1')
+df_collection_weeks %>%
+  subset(genome_status != 'failed_sequencing') %>%
+  subset(pango_lineage %in% reportable_vocs) %>%
+  subset(geo_state == params$state) %>%
+  subset(!is.na(epiweek_end)) %>%
+  ddply(.(epiweek_end,pango_lineage), summarise, n=length(assembly_fasta)) %>%
+  pivot_wider(names_from=pango_lineage, values_from=n, values_fill=0) %>%
+  rename(collection_epiweek_end = epiweek_end) -> vocs_by_week
+#vocs_by_week
+kable(vocs_by_week)
+```
