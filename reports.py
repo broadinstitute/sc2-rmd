@@ -67,7 +67,9 @@ for state in states_all:
         ])
 
     df = df_assemblies.query('geo_state == "{}"'.format(state))
-    df.to_excel('report-{}-per_sample.xlsx'.format(state_sanitized), columns=[
+    df.to_excel('report-{}-per_sample.xlsx'.format(state_sanitized),
+        index=False, freeze_panes=(1,1),
+        columns=[
         'sample',
         'collaborator_id',
         'biosample_accession',

@@ -21,7 +21,7 @@ RUN apt-get -y -qq install \
     imagemagick libmagick++-dev \
     texlive-base texlive-latex-recommended texlive texlive-latex-extra texlive-extra-utils texlive-fonts-extra \
     fonts-roboto \
-    python3 python3-pandas python3-plotly \
+    python3 python3-pip python3-pandas python3-plotly \
     r-base r-base-dev \
   && apt-get clean
 
@@ -38,6 +38,8 @@ RUN R -e "install.packages(c( \
   'RColorBrewer', 'viridis', 'viridisLite', \
   'phytools' ))"
 
+# Install Python
+RUN pip3 install epiweeks
 
 # Bring in other supporting files
 COPY . /docker/
