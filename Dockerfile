@@ -32,7 +32,7 @@ ENV LANG="en_US.UTF-8" LANGUAGE="en_US:en" LC_ALL="en_US.UTF-8"
 # Install R packages
 RUN R -e "install.packages(c( \
   'devtools', 'tidyverse', 'sf', \
-  'knitr', 'rmarkdown', 'tinytex', 'reticulate', \
+  'knitr', 'rmarkdown', 'tinytex', 'reticulate', 'kableExtra', \
   'ggplot2', 'ggthemes', 'dplyr', 'plyr', \
   'plotly', \
   'RColorBrewer', 'viridis', 'viridisLite', \

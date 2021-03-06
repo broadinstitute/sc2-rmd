@@ -10,8 +10,8 @@ params:
   sequencing_lab: "Broad Institute"
   state: "Massachusetts"
   intro_blurb: "The Broad Institute Viral Genomics group, in partnership with the Genomics Platform and Data Sciences Platform, has been engaged in viral sequencing of COVID-19 patients since March 2020."
-  assemblies_tsv: "~/viral/t/reports/assemblies.tsv"
-  collab_ids_tsv: "~/viral/t/reports/collab_ids.tsv"
+  assemblies_tsv: "assemblies.tsv"
+  collab_ids_tsv: "collab_ids.tsv"
   date: !r Sys.Date()
   min_unambig: 24000
 ---
