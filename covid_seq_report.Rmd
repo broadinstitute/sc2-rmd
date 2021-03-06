@@ -2,11 +2,9 @@
 title: "SARS-CoV-2 sequencing report"
 output:
   pdf_document:
-    latex_engine: xelatex
+    latex_engine: pdflatex
 header-includes:
   - \usepackage{fancyhdr}
-  - \usepackage{fontspec}
-  - \usepackage{xcolor}
   - \usepackage[default]{opensans}
 params:
   sequencing_lab: "Broad Institute"
@@ -20,12 +18,12 @@ params:
 <!-- % setup header -->
 \pagestyle{fancy}
 \fancyhf{}
-\renewcommand{\familydefault}{\sfdefault}
 \fancyhead[R]{Summary of SARS-CoV-2 sequencing by the `r params$sequencing_lab`\\
 Generated for \textbf{`r params$state`} on \textbf{`r paste(Sys.Date())`}}
 
+\fancyfoot[L]{Created on \textbf{`r paste(Sys.Date())`}.}
 \fancyfoot[C]{For research use only, not for clinical use.}
-\fancyfoot[R]{\thepage}
+\fancyfoot[R]{p. \thepage}
 
 ```{r, setup, echo=FALSE, message=FALSE, warning=FALSE}
 #knitr::opts_chunk$set(echo = params$printcode)

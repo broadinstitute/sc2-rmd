@@ -19,7 +19,7 @@ RUN apt-get -y -qq install \
     pandoc pandoc-citeproc \
     libxml2 libxml2-dev \
     imagemagick libmagick++-dev \
-    texlive-base texlive-latex-recommended texlive texlive-latex-extra \
+    texlive-base texlive-latex-recommended texlive texlive-latex-extra texlive-extra-utils texlive-fonts-extra \
     fonts-roboto \
     python3 python3-pandas python3-plotly \
     r-base r-base-dev \
