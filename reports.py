@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import os
 import sys
 import subprocess
@@ -61,11 +63,11 @@ for state in states_all:
     state_sanitized = state.replace(' ', '_')
     subprocess.check_call([
         'R', '--vanilla', '--no-save', '-e',
-        "rmarkdown::render('covid_seq_report-by_state.Rmd', output_file='report-{}.pdf', params = list(state = '{}', assemblies_tsv = '{}', collab_ids_tsv = '{}'))".format(state_sanitized, state, assemblies_tsv, collab_ids_tsv),
+        "rmarkdown::render('covid_seq_report-by_state.Rmd', output_file='report-{}.pdf', params = list(state = '{}', assemblies_tsv = '{}', collab_ids_tsv = '{}'))".format(state_sanitized, state, assemblies_tsv, collab_tsv),
         ])
 
     df = df_assemblies.query('geo_state == "{}"'.format(state))
-    df.to_excel('report-{}-per_sample.xlsx', columns=[
+    df.to_excel('report-{}-per_sample.xlsx'.format(state_sanitized), columns=[
         'sample',
         'collaborator_id',
         'biosample_accession',
