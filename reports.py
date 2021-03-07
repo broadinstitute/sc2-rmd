@@ -68,7 +68,7 @@ def main(args):
                     sequencing_lab = '{}',
                     intro_blurb = '{}',
                     min_date = '{}',
-                    min_unambig = {}))
+                    min_unambig = {:d}))
             """.format(state_sanitized,
                 state, args.assemblies_tsv, args.collab_tsv, args.sequencing_lab, args.intro_blurb, args.min_date, args.min_unambig),
             ])

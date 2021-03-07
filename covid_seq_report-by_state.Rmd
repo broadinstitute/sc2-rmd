@@ -160,7 +160,7 @@ This describes the total number of patient samples sequenced in this data set,
 plotted by the date of the sequencing run in our lab.
 
 "Submittable" genomes pass all QC checks and are quickly released to public genome repositories.
-"Failed sequencing" are samples that failed to produce at least `r params$min_unambig` unambiguous base pairs of
+"Failed sequencing" are samples that failed to produce at least `r sprintf("%d", params$min_unambig)` unambiguous base pairs of
 viral genome. Raw data from these samples are submitted to NCBI's SRA database, but the genomes
 are not used for any analyses. "Failed annotation" are samples that produced a sufficiently complete
 genome, but did not pass NCBI's VADR quality checks.
