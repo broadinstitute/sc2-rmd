@@ -59,6 +59,7 @@ def main(args):
     date_string = datetime.date.today().strftime("%Y_%m_%d")
 
     for state in states_all:
+        print("making reports for state '{}'".format(state))
         state_sanitized = state.replace(' ', '_')
         subprocess.check_call([
             'R', '--vanilla', '--no-save', '-e',
@@ -101,10 +102,11 @@ def main(args):
             ])
 
     for collab in collaborators_all:
+        print("making reports for collaborator '{}'".format(collab))
         collab_sanitized = collab.replace(' ', '_')
         subprocess.check_call([
             'R', '--vanilla', '--no-save', '-e',
-            """rmarkdown::render('/docker/covid_seq_report-by_state.Rmd',
+            """rmarkdown::render('/docker/covid_seq_report-by_collaborator.Rmd',
                 output_file='report-{}-by_lab-{}-{}.pdf',
                 output_dir='./',
                 params = list(
