@@ -139,7 +139,7 @@ kable(snapshot, col.names = c(' &nbsp;', paste('week ending', latest_epiweek), '
 ## Sequencing activity over time
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.width=6, fig.height=3}
-ggplot(df_assemblies) + geom_histogram(aes(run_date, fill=geo_loc)) +
+ggplot(df_assemblies) + geom_histogram(aes(run_date, fill=geo_loc_name)) +
   scale_fill_brewer(palette='Pastel1') + theme(legend.position='bottom', legend.direction = 'vertical')
 ```
 
