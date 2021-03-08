@@ -51,9 +51,9 @@ def main(args):
 
     df_assemblies = load_data(args.assemblies_tsv, args.collab_tsv, args.min_unambig)
 
-    states_all = list(x for x in df_assemblies['geo_state'].unique() if x)
-    collaborators_all = list(x for x in df_assemblies['collected_by'].unique() if x)
-    purposes_all = list(x for x in df_assemblies['purpose_of_sequencing'].unique() if x)
+    states_all = list(str(x) for x in df_assemblies['geo_state'].unique() if x)
+    collaborators_all = list(str(x) for x in df_assemblies['collected_by'].unique() if x)
+    purposes_all = list(str(x) for x in df_assemblies['purpose_of_sequencing'].unique() if x)
 
     sequencing_lab_sanitized = args.sequencing_lab.replace(' ', '_')
     date_string = datetime.date.today().strftime("%Y_%m_%d")
