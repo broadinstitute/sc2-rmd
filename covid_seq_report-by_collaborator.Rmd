@@ -1,0 +1,225 @@
+---
+title: "SARS-CoV-2 sequencing report"
+output:
+  pdf_document:
+    latex_engine: pdflatex
+header-includes:
+  - \usepackage{fancyhdr}
+  - \usepackage[default]{opensans}
+params:
+  sequencing_lab: "Broad Institute"
+  collab: "Massachusetts General Hospital"
+  intro_blurb: "The Broad Institute Viral Genomics group, in partnership with the Genomics Platform and Data Sciences Platform, has been engaged in viral sequencing of COVID-19 patients since March 2020."
+  assemblies_tsv: "assemblies.tsv"
+  collab_ids_tsv: "collab_ids.tsv"
+  date: !r Sys.Date()
+  min_date: "2020-01-01"
+  min_unambig: 24000
+---
+
+```{r, setup, echo=FALSE, message=FALSE, warning=FALSE}
+#knitr::opts_chunk$set(echo = params$printcode)
+
+reportable_vocs <- c('B.1.1.7', 'B.1.351', 'P.1')
+
+library(knitr)
+library(ggplot2)
+library(plyr)
+library(dplyr)
+library(tidyverse)
+library(viridis)
+library(lubridate)
+library(reticulate)
+library(plotly)
+```
+
+```{r, load-data, echo=FALSE}
+df_assemblies = read.table(params$assemblies_tsv, sep='\t', header=TRUE)
+collab_ids = read.table(params$collab_ids_tsv, sep='\t', header=TRUE)[c('external_id', 'collaborator_id')]
+collab_ids <- rename(collab_ids, sample = external_id)
+```
+
+```{r, transform-data, echo=FALSE}
+
+# subset to collab
+df_assemblies <- subset(df_assemblies, collected_by == params$collab)
+
+# derived column: genome_status
+df_assemblies <- mutate(df_assemblies, genome_status = case_when(
+  assembly_length_unambiguous < params$min_unambig ~ "failed_sequencing",
+  vadr_num_alerts > 0 ~ "failed_annotation",
+  TRUE ~ "submittable"
+))
+df_assemblies$genome_status = factor(df_assemblies$genome_status, levels=c('failed_sequencing', 'failed_annotation', 'submittable'))
+
+# derived columns: geo_country, geo_state, geo_locality
+df_assemblies$geo_country <- sapply(str_split(df_assemblies$geo_loc_name, ": "), function(x) x[1])
+df_assemblies$geo_state <- sapply(sapply(str_split(df_assemblies$geo_loc_name, ": "), function(x) x[2]), function(y) y[1])
+df_assemblies$geo_locality <- sapply(sapply(str_split(df_assemblies$geo_loc_name, ": "), function(x) x[2]), function(y) y[2])
+
+# fix dates
+df_assemblies$run_date <- as.Date(df_assemblies$run_date)
+df_assemblies$collection_date <- as.Date(df_assemblies$collection_date)
+
+# fix missing data in purpose_of_sequencing
+df_assemblies[is.na(df_assemblies$purpose_of_sequencing)] <- 'Missing'
+# todo: replace '' with 'Missing'
+
+# derived column: sample_age_at_runtime
+df_assemblies$sample_age_at_runtime <- df_assemblies$run_date - df_assemblies$collection_date
+
+# join column: collaborator_id
+df_assemblies <- merge(df_assemblies, collab_ids, by="sample", all.x=TRUE)
+
+# subset to good
+df_good <- subset(df_assemblies, genome_status != "failed_sequencing")
+
+# CDC epiweeks
+data.frame(date=seq(as.Date("2020-01-01"), Sys.Date()+7, by="day")) %>%
+    mutate(week=epiweek(date),year=year(date)) %>%
+    ddply(.(year,week), mutate, epiweek_end=max(date)) ->
+    week_calendar
+df_collection_weeks <- merge(df_assemblies, week_calendar, by.x='collection_date', by.y='date', all.x=TRUE)
+df_run_weeks <- merge(df_assemblies, week_calendar, by.x='run_date', by.y='date', all.x=TRUE)
+
+df_run_weeks %>%
+  ddply(.(epiweek_end,genome_status), summarise, n=length(sample)) %>%
+  subset(epiweek_end >= as.Date(params$min_date)) %>%
+  pivot_wider(names_from=genome_status, values_from=n) -> seq_by_week
+seq_by_week$attempted <- seq_by_week$failed_sequencing + seq_by_week$failed_annotation + seq_by_week$submittable
+seq_by_week$genomes <- seq_by_week$failed_annotation + seq_by_week$submittable
+seq_by_week <- seq_by_week %>%
+  subset(select = c(epiweek_end, attempted, genomes, submittable)) %>%
+  rename(epiweek_ending = epiweek_end, samples_sequenced=attempted, genomes_assembled=genomes, genomes_submittable=submittable)
+
+# latest week stats
+latest_epiweek <- max(df_run_weeks$epiweek_end)
+
+df_run_weeks$is_voc <- df_run_weeks$pango_lineage %in% reportable_vocs
+df_run_weeks %>%
+  subset(epiweek_end == latest_epiweek) ->
+  df_latest_week
+df_latest_week %>%
+  ddply(.(genome_status), summarise, n=length(sample)) %>%
+  pivot_wider(names_from=genome_status, values_from=n) ->
+  latest_counts
+df_latest_week %>% subset(is_voc) %>% nrow -> latest_counts$voc
+snapshot <- data.frame(
+  stat = c('samples sequenced', 'genomes assembled', 'genomes submittable', 'Variants of Concern'),
+  last_week = c(latest_counts$failed_sequencing + latest_counts$failed_annotation + latest_counts$submittable, latest_counts$failed_annotation + latest_counts$submittable, latest_counts$submittable, latest_counts$voc),
+  cumulative = c(sum(seq_by_week$samples_sequenced), sum(seq_by_week$genomes_assembled), sum(seq_by_week$genomes_submittable), length(subset(df_run_weeks, is_voc)$sample)))
+```
+
+<!-- % setup header -->
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[R]{Summary of SARS-CoV-2 sequencing by the `r params$sequencing_lab`\\
+Report generated for \textbf{`r params$collab`} for epiweek ending \textbf{`r latest_epiweek`}}
+
+\fancyfoot[L]{Created on \textbf{`r paste(Sys.Date())`} for epiweek ending \textbf{`r latest_epiweek`}.}
+\fancyfoot[R]{p. \thepage}
+
+\renewcommand{\footrulewidth}{0.4pt}
+
+
+`r params$intro_blurb`
+
+This report, generated on `r params$date`, summarizes our sequencing activity for patient samples provided by **`r params$collab`**. It is current as of the epiweek ending **`r latest_epiweek`**.
+
+
+## Weekly summary
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+kable(snapshot, col.names = c(' &nbsp;', paste('week ending', latest_epiweek), 'cumulative total'))
+```
+
+\vspace{1in}
+
+
+## Sequencing activity over time
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.width=6, fig.height=3}
+ggplot(df_assemblies) + geom_histogram(aes(run_date, fill=geo_loc)) +
+  scale_fill_brewer(palette='Pastel1') + theme(legend.position='bottom', legend.direction = 'vertical')
+```
+
+This describes sequencing attempts over time, broken down by geography.
+
+\newpage
+
+# Sequencing performance over time
+
+### Samples sequenced weekly
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.width=6, fig.height=2}
+ggplot(df_assemblies) + geom_histogram(aes(run_date, fill=genome_status)) +
+	scale_fill_brewer(palette='Pastel1') + theme(legend.title=element_blank())
+```
+
+This describes the total number of patient samples sequenced in this data set,
+plotted by the date of the sequencing run in our lab.
+
+"Submittable" genomes pass all QC checks and are quickly released to public genome repositories.
+"Failed sequencing" are samples that failed to produce at least `r sprintf("%d", params$min_unambig)` unambiguous base pairs of
+viral genome. Raw data from these samples are submitted to NCBI's SRA database, but the genomes
+are not used for any analyses. "Failed annotation" are samples that produced a sufficiently complete
+genome, but did not pass NCBI's VADR quality checks.
+
+### Tabular view by CDC epiweek
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+kable(seq_by_week, col.names = gsub("[_]", " ", names(seq_by_week)))
+```
+
+# Timeliness of surveillance
+
+### Sequencing date vs collection date
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(df_assemblies, height=3, width=6, units='in') + geom_point(aes(
+  x=collection_date, y=run_date, color=as.numeric(run_date - collection_date, units="days"))) +
+  geom_abline(linetype='dashed') +
+  scale_color_viridis(name='sample_age (days)', option='plasma', discrete=FALSE)
+```
+
+This plot describes the "timeliness" of the sequencing run for the purpose of real-time surveillance of circulating lineages and variants of interest. Note that this plot likely includes many samples that were sequenced for non-surveilance purposes.
+
+
+# Evolutionary Clock
+
+### Genetic distance root-to-tip vs sample collection date
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(df_good, height=3, width=6, units='in') + geom_point(aes(
+  x=collection_date, y=dist_to_ref_snps, alpha=0.8, color=nextclade_clade)) + scale_colour_brewer(name='Nextclade Clade', palette='Paired')
+```
+
+A "root-to-tip plot" plots the genetic distance of each sample from Wuhan Hu-1 against the date it was collected. It is generally somewhat linear. Outliers on this plot may be indicative of laboratory or metadata errors, or of evolutionarily unusual lineages (such as B.1.1.7).
+
+
+\newpage
+
+# Phylogenetic Clades and Variants
+
+### Reportable Variants of Concern (VoCs) by CDC epiweek of sample collection
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+df_collection_weeks %>%
+  subset(genome_status != 'failed_sequencing') %>%
+  subset(pango_lineage %in% reportable_vocs) %>%
+  subset(!is.na(epiweek_end)) %>%
+  ddply(.(epiweek_end,pango_lineage), summarise, n=length(sample)) %>%
+  pivot_wider(names_from=pango_lineage, values_from=n, values_fill=0) %>%
+  rename(Collection_epiweek_ending = epiweek_end) -> vocs_by_week
+kable(vocs_by_week, col.names = gsub("[_]", " ", names(vocs_by_week)))
+```
+
+### Nextclade classifications vs sample collection date
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(subset(df_collection_weeks, genome_status != "failed_sequencing")) +
+  geom_histogram(aes(epiweek_end, fill=nextclade_clade)) +
+	scale_fill_brewer(palette='Set1')
+```
+
+This shows the breakdown of major phylogenetic clades over time, using the Nextclade naming system. Variants of Concern (VoCs) are highlighted as specially named Nextclade clades. Nextclade clade 20I/501Y.V1 corresponds to PANGO lineage B.1.1.7, 20H/501Y.V2 corresponds to B.1.351, and 20J/501Y.V3 corresponds to P.1.
+

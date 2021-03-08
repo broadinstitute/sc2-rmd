@@ -6,6 +6,7 @@ import os
 import sys
 import subprocess
 import argparse
+import datetime
 
 #import epiweeks
 import pandas as pd
@@ -54,12 +55,15 @@ def main(args):
     collaborators_all = list(x for x in df_assemblies['collected_by'].unique() if x)
     purposes_all = list(x for x in df_assemblies['purpose_of_sequencing'].unique() if x)
 
+    sequencing_lab_sanitized = args.sequencing_lab.replace(' ', '_')
+    date_string = datetime.date.today().strftime("%Y_%m_%d")
+
     for state in states_all:
         state_sanitized = state.replace(' ', '_')
         subprocess.check_call([
             'R', '--vanilla', '--no-save', '-e',
             """rmarkdown::render('/docker/covid_seq_report-by_state.Rmd',
-                output_file='report-{}.pdf',
+                output_file='report-{}-by_state-{}-{}.pdf',
                 output_dir='./',
                 params = list(
                     state = '{}',
@@ -69,12 +73,55 @@ def main(args):
                     intro_blurb = '{}',
                     min_date = '{}',
                     min_unambig = {:d}))
-            """.format(state_sanitized,
+            """.format(sequencing_lab_sanitized, state_sanitized, date_string,
                 state, args.assemblies_tsv, args.collab_tsv, args.sequencing_lab, args.intro_blurb, args.min_date, args.min_unambig),
             ])
 
         df = df_assemblies.query('geo_state == "{}"'.format(state))
-        df.to_excel('report-{}-per_sample.xlsx'.format(state_sanitized),
+        df.to_excel('report-{}-by_state-{}-{}-per_sample.xlsx'.format(
+            sequencing_lab_sanitized, state_sanitized, date_string),
+            index=False, freeze_panes=(1,1),
+            columns=[
+            'sample',
+            'collaborator_id',
+            'biosample_accession',
+            'pango_lineage',
+            'nextclade_clade',
+            'geo_loc_name',
+            'run_date',
+            'assembly_length_unambiguous',
+            'amplicon_set',
+            'vadr_num_alerts',
+            'nextclade_aa_subs',
+            'nextclade_aa_dels',
+            'collected_by',
+            'purpose_of_sequencing',
+            'bioproject_accession',
+            'genome_status',
+            ])
+
+    for collab in collaborators_all:
+        collab_sanitized = collab.replace(' ', '_')
+        subprocess.check_call([
+            'R', '--vanilla', '--no-save', '-e',
+            """rmarkdown::render('/docker/covid_seq_report-by_state.Rmd',
+                output_file='report-{}-by_lab-{}-{}.pdf',
+                output_dir='./',
+                params = list(
+                    collab = '{}',
+                    assemblies_tsv = '{}',
+                    collab_ids_tsv = '{}',
+                    sequencing_lab = '{}',
+                    intro_blurb = '{}',
+                    min_date = '{}',
+                    min_unambig = {:d}))
+            """.format(sequencing_lab_sanitized, collab_sanitized, date_string,
+                collab, args.assemblies_tsv, args.collab_tsv, args.sequencing_lab, args.intro_blurb, args.min_date, args.min_unambig),
+            ])
+
+        df = df_assemblies.query('collected_by == "{}"'.format(collab))
+        df.to_excel('report-{}-by_lab-{}-{}-per_sample.xlsx'.format(
+            sequencing_lab_sanitized, collab_sanitized, date_string),
             index=False, freeze_panes=(1,1),
             columns=[
             'sample',
