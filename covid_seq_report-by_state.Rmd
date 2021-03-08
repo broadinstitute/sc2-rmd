@@ -206,10 +206,16 @@ A "root-to-tip plot" plots the genetic distance of each sample from Wuhan Hu-1 a
 df_collection_weeks %>%
   subset(genome_status != 'failed_sequencing') %>%
   subset(pango_lineage %in% reportable_vocs) %>%
-  subset(!is.na(epiweek_end)) %>%
-  ddply(.(epiweek_end,pango_lineage), summarise, n=length(sample)) %>%
-  pivot_wider(names_from=pango_lineage, values_from=n, values_fill=0) %>%
-  rename(Collection_epiweek_ending = epiweek_end) -> vocs_by_week
+  subset(!is.na(epiweek_end)) -> x
+if(nrow(x) > 0) {
+  x %>%
+    ddply(.(epiweek_end,pango_lineage), summarise, n=length(sample)) %>%
+    pivot_wider(names_from=pango_lineage, values_from=n, values_fill=0) %>%
+    rename(Collection_epiweek_ending = epiweek_end) -> vocs_by_week
+} else {
+  vocs_by_week <- data.frame(matrix(ncol = 1, nrow = 0))
+  colnames(vocs_by_week) <- 'Collection epiweek ending'
+}
 kable(vocs_by_week, col.names = gsub("[_]", " ", names(vocs_by_week)))
 ```
 
