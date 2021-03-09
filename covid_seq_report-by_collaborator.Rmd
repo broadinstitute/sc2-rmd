@@ -31,6 +31,8 @@ library(viridis)
 library(lubridate)
 library(reticulate)
 library(plotly)
+library(urbnmapr)
+library(sf)
 ```
 
 ```{r, load-data, echo=FALSE}
@@ -142,9 +144,20 @@ kable(snapshot, col.names = c(' &nbsp;', paste('week ending', latest_epiweek), '
 
 ## Sequencing activity over time
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.width=6, fig.height=3}
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.width=6, fig.height=2}
 ggplot(df_assemblies) + geom_histogram(aes(run_date, fill=geo_loc_name)) +
   scale_fill_brewer(palette='Pastel1') + theme(legend.position='bottom', legend.direction = 'vertical')
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.width=6, fig.height=2}
+df_assemblies %>%
+  ddply(.(geo_state), summarise, n=length(sample)) %>%
+  merge(get_urbn_map("states", sf=TRUE), by.x='geo_state', by.y='state_name', all.x=TRUE, all.y=FALSE) %>%
+  mutate(geometry=st_transform(geometry, crs=3785)) %>%
+  ggplot() +
+  geom_sf(aes(geometry=geometry, fill=n), color='white') +
+  geom_sf_label(aes(geometry=geometry, label=geo_state)) +
+  scale_fill_distiller('samples sequenced')
 ```
 
 This describes sequencing attempts over time, broken down by geography.
@@ -193,8 +206,10 @@ This plot describes the "timeliness" of the sequencing run for the purpose of re
 ### Genetic distance root-to-tip vs sample collection date
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
+#rtt_slope <- 0.0008 * as.numeric(as.Date('2021-01-01') - as.Date('2020-01-01'))
+#rtt_intercept <-  rtt_slope * as.numeric(as.Date("2019-12-26"))
 ggplot(df_good, height=3, width=6, units='in') + geom_point(aes(
-  x=collection_date, y=dist_to_ref_snps, color=nextclade_clade), alpha=0.8) + scale_colour_brewer(name='Nextclade Clade', palette='Paired')
+  x=collection_date, y=dist_to_ref_snps, color=nextclade_clade), alpha=0.8) + scale_colour_brewer(name='Nextclade Clade', palette='Paired') + geom_smooth(aes(x=collection_date, y=dist_to_ref_snps), method=lm)
 ```
 
 A "root-to-tip plot" plots the genetic distance of each sample from Wuhan Hu-1 against the date it was collected. It is generally somewhat linear. Outliers on this plot may be indicative of laboratory or metadata errors, or of evolutionarily unusual lineages (such as B.1.1.7).

@@ -31,6 +31,8 @@ library(viridis)
 library(lubridate)
 library(reticulate)
 library(plotly)
+library(urbnmapr)
+library(sf)
 ```
 
 ```{r, load-data, echo=FALSE}
@@ -193,8 +195,10 @@ This plot describes the "timeliness" of the sequencing run for the purpose of re
 ### Genetic distance root-to-tip vs sample collection date
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
+#rtt_slope <- 0.0008 * as.numeric(as.Date('2021-01-01') - as.Date('2020-01-01'))
+#rtt_intercept <-  rtt_slope * as.numeric(as.Date("2019-12-26"))
 ggplot(df_good, height=3, width=6, units='in') + geom_point(aes(
-  x=collection_date, y=dist_to_ref_snps, color=nextclade_clade), alpha=0.8) + scale_colour_brewer(name='Nextclade Clade', palette='Paired')
+  x=collection_date, y=dist_to_ref_snps, color=nextclade_clade), alpha=0.8) + scale_colour_brewer(name='Nextclade Clade', palette='Paired') + geom_smooth(aes(x=collection_date, y=dist_to_ref_snps), method=lm)
 ```
 
 A "root-to-tip plot" plots the genetic distance of each sample from Wuhan Hu-1 against the date it was collected. It is generally somewhat linear. Outliers on this plot may be indicative of laboratory or metadata errors, or of evolutionarily unusual lineages (such as B.1.1.7).
