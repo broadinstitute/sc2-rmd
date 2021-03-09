@@ -58,6 +58,30 @@ def main(args):
     sequencing_lab_sanitized = args.sequencing_lab.replace(' ', '_')
     date_string = datetime.date.today().strftime("%Y_%m_%d")
 
+    # the everything spreadsheet
+    df_assemblies.to_excel('report-{}-everything-{}.xlsx'.format(
+        sequencing_lab_sanitized, date_string),
+        index=False, freeze_panes=(1,1),
+        columns=[
+        'sample',
+        'collaborator_id',
+        'biosample_accession',
+        'pango_lineage',
+        'nextclade_clade',
+        'geo_loc_name',
+        'run_date',
+        'assembly_length_unambiguous',
+        'amplicon_set',
+        'vadr_num_alerts',
+        'nextclade_aa_subs',
+        'nextclade_aa_dels',
+        'collected_by',
+        'purpose_of_sequencing',
+        'bioproject_accession',
+        'genome_status',
+        ])
+
+    # per-state PDFs and XLSXs
     for state in states_all:
         print("making reports for state '{}'".format(state))
         state_sanitized = state.replace(' ', '_')
@@ -101,6 +125,7 @@ def main(args):
             'genome_status',
             ])
 
+    # per-collab PDFs and XLSXs
     for collab in collaborators_all:
         print("making reports for collaborator '{}'".format(collab))
         collab_sanitized = collab.replace(' ', '_')

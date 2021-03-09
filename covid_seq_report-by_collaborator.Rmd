@@ -61,6 +61,9 @@ df_assemblies$geo_locality <- sapply(sapply(str_split(df_assemblies$geo_loc_name
 df_assemblies$run_date <- as.Date(df_assemblies$run_date)
 df_assemblies$collection_date <- as.Date(df_assemblies$collection_date)
 
+# filter to earliest allowed run_date (every single library, including controls, should have this field)
+df_assemblies <- subset(df_assemblies, run_date >= as.Date(params$min_date))
+
 # fix missing data in purpose_of_sequencing
 df_assemblies[is.na(df_assemblies$purpose_of_sequencing)] <- 'Missing'
 # todo: replace '' with 'Missing'
@@ -84,7 +87,6 @@ df_run_weeks <- merge(df_assemblies, week_calendar, by.x='run_date', by.y='date'
 
 df_run_weeks %>%
   ddply(.(epiweek_end,genome_status), summarise, n=length(sample)) %>%
-  subset(epiweek_end >= as.Date(params$min_date)) %>%
   pivot_wider(names_from=genome_status, values_from=n) -> seq_by_week
 seq_by_week$attempted <- seq_by_week$failed_sequencing + seq_by_week$failed_annotation + seq_by_week$submittable
 seq_by_week$genomes <- seq_by_week$failed_annotation + seq_by_week$submittable
