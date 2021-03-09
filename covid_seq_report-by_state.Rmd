@@ -95,6 +95,8 @@ seq_by_week <- seq_by_week %>%
   rename(epiweek_ending = epiweek_end, samples_sequenced=attempted, genomes_assembled=genomes, genomes_submittable=submittable)
 
 # latest week stats
+earliest_rundate <- min(df_assemblies$run_date)
+latest_rundate <- max(df_assemblies$run_date)
 latest_epiweek <- max(df_run_weeks$epiweek_end)
 
 df_run_weeks$is_voc <- df_run_weeks$pango_lineage %in% reportable_vocs
@@ -126,7 +128,7 @@ Report generated for \textbf{`r params$state`} for epiweek ending \textbf{`r lat
 
 `r params$intro_blurb`
 
-This report, generated on `r params$date`, summarizes our sequencing activity for patient samples collected in **`r params$state`**. It is current as of the epiweek ending **`r latest_epiweek`**.
+This report, generated on `r params$date`, summarizes our sequencing activity for patient samples collected in **`r params$state`**. The samples included in this report were sequenced between `r earliest_rundate` and `r latest_rundate`. This report is current as of the epiweek ending **`r latest_epiweek`**.
 
 
 ## Weekly summary
@@ -192,7 +194,7 @@ This plot describes the "timeliness" of the sequencing run for the purpose of re
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 ggplot(df_good, height=3, width=6, units='in') + geom_point(aes(
-  x=collection_date, y=dist_to_ref_snps, alpha=0.8, color=nextclade_clade)) + scale_colour_brewer(name='Nextclade Clade', palette='Paired')
+  x=collection_date, y=dist_to_ref_snps, color=nextclade_clade), alpha=0.8) + scale_colour_brewer(name='Nextclade Clade', palette='Paired')
 ```
 
 A "root-to-tip plot" plots the genetic distance of each sample from Wuhan Hu-1 against the date it was collected. It is generally somewhat linear. Outliers on this plot may be indicative of laboratory or metadata errors, or of evolutionarily unusual lineages (such as B.1.1.7).
