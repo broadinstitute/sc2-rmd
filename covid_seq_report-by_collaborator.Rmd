@@ -139,15 +139,18 @@ This report, generated on `r params$date`, summarizes our sequencing activity fo
 kable(snapshot, col.names = c(' &nbsp;', paste('week ending', latest_epiweek), 'cumulative total'))
 ```
 
-\vspace{1in}
-
+\vspace{0.25in}
 
 ## Sequencing activity over time
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.width=6, fig.height=2}
-ggplot(df_assemblies) + geom_histogram(aes(run_date, fill=geo_loc_name)) +
-  scale_fill_brewer(palette='Pastel1') + theme(legend.position='bottom', legend.direction = 'vertical')
+ggplot(df_assemblies) +
+  geom_histogram(aes(run_date, fill=geo_loc_name)) +
+  scale_fill_brewer(palette='Pastel1') +
+  theme(legend.position='right')
 ```
+
+\vspace{0.25in}
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.width=6, fig.height=2}
 df_assemblies %>%
@@ -157,7 +160,11 @@ df_assemblies %>%
   ggplot() +
   geom_sf(aes(geometry=geometry, fill=n), color='white') +
   geom_sf_label(aes(geometry=geometry, label=geo_state)) +
-  scale_fill_distiller('samples sequenced')
+  coord_sf(datum=NA) +
+  scale_fill_distiller('samples sequenced') +
+  theme(legend.position='right',
+    axis.text.x=element_blank(), axis.text.y=element_blank())
+  #guides(fill = guide_legend(override.aes = list(size = 1))) +
 ```
 
 This describes sequencing attempts over time, broken down by geography.
