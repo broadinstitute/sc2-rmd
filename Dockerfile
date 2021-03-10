@@ -1,4 +1,4 @@
-FROM quay.io/broadinstitute/viral-rmd:0.1
+FROM quay.io/broadinstitute/viral-rmd:0.1.1
 
 LABEL maintainer "Daniel Park <dpark@broadinstitute.org>"
 
