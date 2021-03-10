@@ -150,7 +150,7 @@ df_assemblies %>%
 
 \newpage
 
-## Sequencing activity by geography
+## Sequencing activity over time and space
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.width=6, fig.height=3}
 df_assemblies %>%
@@ -166,17 +166,17 @@ df_assemblies %>%
 ```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.width=6, fig.height=4.75}
 df_assemblies %>%
   ddply(.(geo_state), summarise, n=length(sample)) %>%
-  merge(get_urbn_map("states", sf=TRUE), by.x='geo_state', by.y='state_name', all.x=TRUE, all.y=TRUE) %>%
-  mutate(geometry=st_transform(geometry, crs=3785)) %>%
+  merge(get_urbn_map("states", sf=TRUE), by.x='geo_state', by.y='state_name', all=TRUE) %>%
+  transform(centroid_x=st_coordinates(st_centroid(geometry))[,1],
+         centroid_y=st_coordinates(st_centroid(geometry))[,2]) %>%
   ggplot() +
-  geom_sf(aes(geometry=geometry, fill=n), color='white') +
+  geom_sf(aes(geometry=geometry, fill=n), fill='grey', color='white') +
   coord_sf(datum=NA) +
-  scale_fill_viridis('samples sequenced') +
+  geom_point(aes(x=centroid_x, y=centroid_y, size=n), alpha=0.5, pch=21, colour='black', fill='blue') +
+  #geom_scatterpie(aes(x=centroid_x, y=centroid_y, group=run_epiweek)) +
   theme(legend.position='bottom',
     axis.text.x=element_blank(), axis.text.y=element_blank())
 ```
-
-This describes sequencing attempts over time, broken down by geography.
 
 \newpage
 
