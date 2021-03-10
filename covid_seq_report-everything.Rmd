@@ -8,7 +8,6 @@ header-includes:
   - \usepackage[default]{opensans}
 params:
   sequencing_lab: "Broad Institute"
-  collab: "Massachusetts General Hospital"
   intro_blurb: "The Broad Institute Viral Genomics group, in partnership with the Genomics Platform and Data Sciences Platform, has been engaged in viral sequencing of COVID-19 patients since March 2020."
   assemblies_tsv: "assemblies.tsv"
   collab_ids_tsv: "collab_ids.tsv"
@@ -42,9 +41,6 @@ collab_ids <- rename(collab_ids, sample = external_id)
 ```
 
 ```{r, transform-data, echo=FALSE}
-
-# subset to collab
-df_assemblies <- subset(df_assemblies, collected_by == params$collab)
 
 # derived column: genome_status
 df_assemblies <- mutate(df_assemblies, genome_status = case_when(
@@ -120,7 +116,7 @@ snapshot <- data.frame(
 \pagestyle{fancy}
 \fancyhf{}
 \fancyhead[R]{Summary of SARS-CoV-2 sequencing by the `r params$sequencing_lab`\\
-Report generated for \textbf{`r params$collab`} for epiweek ending \textbf{`r latest_epiweek`}}
+Internal use report generated for \textbf{all samples} as of the epiweek ending \textbf{`r latest_epiweek`}}
 
 \fancyfoot[L]{Created on \textbf{`r paste(Sys.Date())`} for epiweek ending \textbf{`r latest_epiweek`}.}
 \fancyfoot[R]{p. \thepage}
@@ -130,7 +126,7 @@ Report generated for \textbf{`r params$collab`} for epiweek ending \textbf{`r la
 
 `r params$intro_blurb`
 
-This report, generated on `r params$date`, summarizes our sequencing activity for patient samples provided by **`r params$collab`**. The samples included in this report were sequenced between `r earliest_rundate` and `r latest_rundate`. This report is current as of the epiweek ending **`r latest_epiweek`**.
+This report, generated on `r params$date`, summarizes our sequencing activity for **all patient samples** across all collaborators and states. The samples included in this report were sequenced between `r earliest_rundate` and `r latest_rundate`. This report is current as of the epiweek ending **`r latest_epiweek`**.
 
 
 ## Weekly summary
@@ -139,26 +135,44 @@ This report, generated on `r params$date`, summarizes our sequencing activity fo
 kable(snapshot, col.names = c(' &nbsp;', paste('week ending', latest_epiweek), 'cumulative total'))
 ```
 
-## Sequencing activity over time and space
+\vspace{0.25in}
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.width=6, fig.height=1.75}
-ggplot(df_assemblies) +
+## Sequencing activity over time by source
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.width=6, fig.height=4}
+df_assemblies %>%
+  subset(!is.na(collected_by) & (collected_by != '')) %>%
+  ggplot() +
+  geom_histogram(aes(run_date, fill=collected_by)) +
+  scale_fill_brewer(palette='Set3') +
+  theme(legend.position='bottom', legend.direction = 'vertical')
+```
+
+\newpage
+
+## Sequencing activity by geography
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.width=6, fig.height=3}
+df_assemblies %>%
+  subset(!is.na(geo_loc_name) & (geo_loc_name != '')) %>%
+  ggplot() +
   geom_histogram(aes(run_date, fill=geo_loc_name)) +
   scale_fill_brewer(palette='Pastel1') +
   theme(legend.position='right')
 ```
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.width=6, fig.height=2.5}
+\vspace{0.25in}
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.width=6, fig.height=4.75}
 df_assemblies %>%
   ddply(.(geo_state), summarise, n=length(sample)) %>%
-  merge(get_urbn_map("states", sf=TRUE), by.x='geo_state', by.y='state_name', all.x=TRUE, all.y=FALSE) %>%
+  merge(get_urbn_map("states", sf=TRUE), by.x='geo_state', by.y='state_name', all.x=TRUE, all.y=TRUE) %>%
   mutate(geometry=st_transform(geometry, crs=3785)) %>%
   ggplot() +
   geom_sf(aes(geometry=geometry, fill=n), color='white') +
-#  geom_sf_label(aes(geometry=geometry, label=geo_state)) +
   coord_sf(datum=NA) +
   scale_fill_viridis('samples sequenced') +
-  theme(legend.position='right',
+  theme(legend.position='bottom',
     axis.text.x=element_blank(), axis.text.y=element_blank())
 ```
 

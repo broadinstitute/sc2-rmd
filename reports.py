@@ -58,7 +58,7 @@ def main(args):
     sequencing_lab_sanitized = args.sequencing_lab.replace(' ', '_')
     date_string = datetime.date.today().strftime("%Y_%m_%d")
 
-    # the everything spreadsheet
+    # the everything reports
     df_assemblies.to_excel('report-{}-everything-{}.xlsx'.format(
         sequencing_lab_sanitized, date_string),
         index=False, freeze_panes=(1,1),
@@ -80,6 +80,22 @@ def main(args):
         'bioproject_accession',
         'genome_status',
         ])
+    subprocess.check_call([
+        'R', '--vanilla', '--no-save', '-e',
+        """rmarkdown::render('/docker/covid_seq_report-everything.Rmd',
+            output_file='report-{}-everything-{}.pdf',
+            output_dir='./',
+            params = list(
+                assemblies_tsv = '{}',
+                collab_ids_tsv = '{}',
+                sequencing_lab = '{}',
+                intro_blurb = '{}',
+                min_date = '{}',
+                min_unambig = {:d}))
+        """.format(sequencing_lab_sanitized, date_string,
+            args.assemblies_tsv, args.collab_tsv, args.sequencing_lab, args.intro_blurb, args.min_date, args.min_unambig),
+        ])
+
 
     # per-state PDFs and XLSXs
     for state in states_all:
