@@ -61,7 +61,11 @@ df_assemblies$run_date <- as.Date(df_assemblies$run_date)
 df_assemblies$collection_date <- as.Date(df_assemblies$collection_date)
 
 # filter to earliest allowed run_date (every single library, including controls, should have this field)
-df_assemblies <- subset(df_assemblies, (as.Date(params$min_date) <= run_date) && (run_date <= as.Date(params$max_date)))
+df_assemblies %>%
+  subset(!is.na(run_date)) %>%
+  subset(as.Date(params$min_date) <= run_date) %>%
+  subset(run_date <= as.Date(params$max_date)) ->
+  df_assemblies
 
 # fix missing data in purpose_of_sequencing
 df_assemblies[is.na(df_assemblies$purpose_of_sequencing)] <- 'Missing'
