@@ -52,8 +52,8 @@ df_assemblies$genome_status = factor(df_assemblies$genome_status, levels=c('fail
 
 # derived columns: geo_country, geo_state, geo_locality
 df_assemblies$geo_country <- sapply(str_split(df_assemblies$geo_loc_name, ": "), function(x) x[1])
-df_assemblies$geo_state <- sapply(sapply(str_split(df_assemblies$geo_loc_name, ": "), function(x) x[2]), function(y) y[1])
-df_assemblies$geo_locality <- sapply(sapply(str_split(df_assemblies$geo_loc_name, ": "), function(x) x[2]), function(y) y[2])
+df_assemblies$geo_state <- sapply(str_split(sapply(str_split(df_assemblies$geo_loc_name, ": "), function(x) x[2]), ", "), function(y) y[1])
+df_assemblies$geo_locality <- sapply(str_split(sapply(str_split(df_assemblies$geo_loc_name, ": "), function(x) x[2]), ", "), function(y) y[2])
 
 # fix dates
 df_assemblies$run_date <- as.Date(df_assemblies$run_date)
