@@ -90,10 +90,12 @@ def main(args):
                 collab_ids_tsv = '{}',
                 sequencing_lab = '{}',
                 intro_blurb = '{}',
+                {}
                 min_date = '{}',
                 min_unambig = {:d}))
         """.format(sequencing_lab_sanitized, date_string,
-            args.assemblies_tsv, args.collab_tsv, args.sequencing_lab, args.intro_blurb, args.min_date, args.min_unambig),
+            args.assemblies_tsv, args.collab_tsv, args.sequencing_lab, args.intro_blurb,
+            ("max_date = '{}', ".format(args.max_date) if args.max_date else ""), args.min_date, args.min_unambig),
         ])
 
 
@@ -112,10 +114,12 @@ def main(args):
                     collab_ids_tsv = '{}',
                     sequencing_lab = '{}',
                     intro_blurb = '{}',
+                    {}
                     min_date = '{}',
                     min_unambig = {:d}))
             """.format(sequencing_lab_sanitized, state_sanitized, date_string,
-                state, args.assemblies_tsv, args.collab_tsv, args.sequencing_lab, args.intro_blurb, args.min_date, args.min_unambig),
+                state, args.assemblies_tsv, args.collab_tsv, args.sequencing_lab, args.intro_blurb,
+                ("max_date = '{}', ".format(args.max_date) if args.max_date else ""), args.min_date, args.min_unambig),
             ])
 
         df = df_assemblies.query('geo_state == "{}"'.format(state))
@@ -156,10 +160,12 @@ def main(args):
                     collab_ids_tsv = '{}',
                     sequencing_lab = '{}',
                     intro_blurb = '{}',
+                    {}
                     min_date = '{}',
                     min_unambig = {:d}))
             """.format(sequencing_lab_sanitized, collab_sanitized, date_string,
-                collab, args.assemblies_tsv, args.collab_tsv, args.sequencing_lab, args.intro_blurb, args.min_date, args.min_unambig),
+                collab, args.assemblies_tsv, args.collab_tsv, args.sequencing_lab, args.intro_blurb,
+                ("max_date = '{}', ".format(args.max_date) if args.max_date else ""), args.min_date, args.min_unambig),
             ])
 
         df = df_assemblies.query('collected_by == "{}"'.format(collab))
@@ -200,6 +206,9 @@ if __name__ == '__main__':
     parser.add_argument('--min_date',
                         default='2020-01-01',
                         help='Report only on sequencing activity on or after this date. (default: %(default)s)')
+    parser.add_argument('--max_date',
+                        default=None,
+                        help='Report only on sequencing activity on or before this date. (default: today)')
     parser.add_argument('--min_unambig',
                         type=int,
                         default=24000,

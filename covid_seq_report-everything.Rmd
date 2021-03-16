@@ -12,6 +12,7 @@ params:
   assemblies_tsv: "assemblies.tsv"
   collab_ids_tsv: "collab_ids.tsv"
   date: !r Sys.Date()
+  max_date: !r Sys.Date()
   min_date: "2020-01-01"
   min_unambig: 24000
 ---
@@ -60,7 +61,7 @@ df_assemblies$run_date <- as.Date(df_assemblies$run_date)
 df_assemblies$collection_date <- as.Date(df_assemblies$collection_date)
 
 # filter to earliest allowed run_date (every single library, including controls, should have this field)
-df_assemblies <- subset(df_assemblies, run_date >= as.Date(params$min_date))
+df_assemblies <- subset(df_assemblies, as.Date(params$max_date) >= run_date >= as.Date(params$min_date))
 
 # fix missing data in purpose_of_sequencing
 df_assemblies[is.na(df_assemblies$purpose_of_sequencing)] <- 'Missing'
