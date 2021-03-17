@@ -13,7 +13,7 @@ import pandas as pd
 import numpy as np
 
 
-def load_data(assemblies_tsv, collab_tsv, min_unambig):
+def load_data(assemblies_tsv, collab_tsv, min_unambig, min_date, max_date):
 
     df_assemblies = pd.read_csv(assemblies_tsv, sep='\t')
     if collab_tsv and os.path.isfile(collab_tsv) and os.path.getsize(collab_tsv):
@@ -25,6 +25,12 @@ def load_data(assemblies_tsv, collab_tsv, min_unambig):
 
     # format dates properly
     df_assemblies = df_assemblies.astype({'collection_date':np.datetime64,'run_date':np.datetime64})
+
+    # subset by date range
+    if min_date:
+        df_assemblies = df_assemblies.loc[~df_assemblies['run_date'].isna() & (np.datetime64(min_date) <= df_assemblies['run_date'])]
+    if max_date:
+        df_assemblies = df_assemblies.loc[~df_assemblies['run_date'].isna() & (df_assemblies['run_date'] <= np.datetime64(max_date))]
 
     # fix missing data in purpose_of_sequencing
     df_assemblies.loc[:,'purpose_of_sequencing'] = df_assemblies.loc[:,'purpose_of_sequencing'].fillna('Missing').replace('', 'Missing')
@@ -49,7 +55,7 @@ def load_data(assemblies_tsv, collab_tsv, min_unambig):
 
 def main(args):
 
-    df_assemblies = load_data(args.assemblies_tsv, args.collab_tsv, args.min_unambig)
+    df_assemblies = load_data(args.assemblies_tsv, args.collab_tsv, args.min_unambig, args.min_date, args.max_date)
 
     states_all = list(str(x) for x in df_assemblies['geo_state'].unique() if x and not pd.isna(x))
     collaborators_all = list(str(x) for x in df_assemblies['collected_by'].unique() if x and not pd.isna(x))
@@ -195,7 +201,7 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Generate sequencing progress reports for collaborators and public health partners.')
     parser.add_argument('assemblies_tsv', help='Sample and assembly metadata tsv input')
-    parser.add_argument('collab_tsv', help='Collaborator ID tsv input')
+    parser.add_argument('--collab_tsv', help='Collaborator ID tsv input')
 
     parser.add_argument('--sequencing_lab',
                         default='Broad Institute',
