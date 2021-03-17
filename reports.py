@@ -24,6 +24,11 @@ def load_data(assemblies_tsv, collab_tsv, min_unambig, min_date, max_date):
 
 
     # format dates properly
+    df_assemblies = df_assemblies.loc[
+        ~df_assemblies['run_date'].isna() &
+        ~df_assemblies['collection_date'].isna() &
+        (df_assemblies['run_date'] != 'missing') &
+        (df_assemblies['collection_date'] != 'missing')]
     df_assemblies = df_assemblies.astype({'collection_date':np.datetime64,'run_date':np.datetime64})
 
     # subset by date range
@@ -96,11 +101,14 @@ def main(args):
                 collab_ids_tsv = '{}',
                 sequencing_lab = '{}',
                 intro_blurb = '{}',
+                voc_list = '{}',
+                voi_list = '{}',
                 {}
                 min_date = '{}',
                 min_unambig = {:d}))
         """.format(sequencing_lab_sanitized, date_string,
             args.assemblies_tsv, args.collab_tsv, args.sequencing_lab, args.intro_blurb,
+            args.voc_list, args.voi_list,
             ("max_date = '{}', ".format(args.max_date) if args.max_date else ""), args.min_date, args.min_unambig),
         ])
 
@@ -120,11 +128,14 @@ def main(args):
                     collab_ids_tsv = '{}',
                     sequencing_lab = '{}',
                     intro_blurb = '{}',
+                    voc_list = '{}',
+                    voi_list = '{}',
                     {}
                     min_date = '{}',
                     min_unambig = {:d}))
             """.format(sequencing_lab_sanitized, state_sanitized, date_string,
                 state, args.assemblies_tsv, args.collab_tsv, args.sequencing_lab, args.intro_blurb,
+                args.voc_list, args.voi_list,
                 ("max_date = '{}', ".format(args.max_date) if args.max_date else ""), args.min_date, args.min_unambig),
             ])
 
@@ -166,11 +177,14 @@ def main(args):
                     collab_ids_tsv = '{}',
                     sequencing_lab = '{}',
                     intro_blurb = '{}',
+                    voc_list = '{}',
+                    voi_list = '{}',
                     {}
                     min_date = '{}',
                     min_unambig = {:d}))
             """.format(sequencing_lab_sanitized, collab_sanitized, date_string,
                 collab, args.assemblies_tsv, args.collab_tsv, args.sequencing_lab, args.intro_blurb,
+                args.voc_list, args.voi_list,
                 ("max_date = '{}', ".format(args.max_date) if args.max_date else ""), args.min_date, args.min_unambig),
             ])
 
@@ -219,6 +233,13 @@ if __name__ == '__main__':
                         type=int,
                         default=24000,
                         help='Threshold for considering a genome successful. (default: %(default)s)')
+
+    parser.add_argument('--voc_list',
+                        default="B.1.1.7,B.1.351,P.1,B.1.427,B.1.429",
+                        help='Comma separated list of Pangolin lineages that are official Variants of Concern. (default: %(default)s)')
+    parser.add_argument('--voi_list',
+                        default="B.1.525,B.1.526,P.2",
+                        help='Comma separated list of Pangolin lineages that are official Variants of Interest. (default: %(default)s)')
 
     args = parser.parse_args()
     main(args)
