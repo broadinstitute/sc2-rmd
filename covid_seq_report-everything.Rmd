@@ -7,8 +7,8 @@ header-includes:
   - \usepackage{fancyhdr}
   - \usepackage[default]{opensans}
 params:
-  sequencing_lab: "Broad Institute"
-  intro_blurb: "The Broad Institute Viral Genomics group, in partnership with the Genomics Platform and Data Sciences Platform, has been engaged in viral sequencing of COVID-19 patients since March 2020."
+  sequencing_lab: "Example Sequencing Lab"
+  intro_blurb: "Example introductory paragraph that describes how Example Sequencing Lab has been engaged in viral sequencing of COVID-19."
   assemblies_tsv: "assemblies.tsv"
   collab_ids_tsv: "collab_ids.tsv"
   date: !r Sys.Date()

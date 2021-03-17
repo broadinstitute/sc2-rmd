@@ -204,10 +204,10 @@ if __name__ == '__main__':
     parser.add_argument('--collab_tsv', help='Collaborator ID tsv input')
 
     parser.add_argument('--sequencing_lab',
-                        default='Broad Institute',
+                        default='Sequencing Lab',
                         help='The name of the sequencing lab to be used in reports. (default: %(default)s)')
     parser.add_argument('--intro_blurb',
-                        default='The Broad Institute Viral Genomics group, in partnership with the Genomics Platform and Data Sciences Platform, has been engaged in viral sequencing of COVID-19 patients since March 2020.',
+                        default='The Sequencing Lab is sequencing SARS-CoV-2 from patients.',
                         help='An introductory paragraph for the first page of the PDF reports. (default: %(default)s)')
     parser.add_argument('--min_date',
                         default='2020-01-01',
