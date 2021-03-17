@@ -106,6 +106,7 @@ latest_rundate <- max(df_assemblies$run_date)
 latest_epiweek <- max(df_run_weeks$epiweek_end)
 
 df_run_weeks$is_voc <- df_run_weeks$pango_lineage %in% reportable_vocs
+df_run_weeks$is_voi <- df_run_weeks$pango_lineage %in% reportable_vois
 df_run_weeks %>%
   subset(epiweek_end == latest_epiweek) ->
   df_latest_week
@@ -114,10 +115,11 @@ df_latest_week %>%
   pivot_wider(names_from=genome_status, values_from=n) ->
   latest_counts
 df_latest_week %>% subset(is_voc) %>% nrow -> latest_counts$voc
+df_latest_week %>% subset(is_voi) %>% nrow -> latest_counts$voi
 snapshot <- data.frame(
-  stat = c('samples sequenced', 'genomes assembled', 'genomes submittable', 'Variants of Concern'),
-  last_week = c(latest_counts$failed_sequencing + latest_counts$failed_annotation + latest_counts$submittable, latest_counts$failed_annotation + latest_counts$submittable, latest_counts$submittable, latest_counts$voc),
-  cumulative = c(sum(seq_by_week$samples_sequenced), sum(seq_by_week$genomes_assembled), sum(seq_by_week$genomes_submittable), length(subset(df_run_weeks, is_voc)$sample)))
+  stat = c('samples sequenced', 'genomes assembled', 'genomes submittable', 'Variants of Interest (VoIs)', 'Variants of Concern (VoCs)'),
+  last_week = c(latest_counts$failed_sequencing + latest_counts$failed_annotation + latest_counts$submittable, latest_counts$failed_annotation + latest_counts$submittable, latest_counts$submittable, latest_counts$voi, latest_counts$voc),
+  cumulative = c(sum(seq_by_week$samples_sequenced), sum(seq_by_week$genomes_assembled), sum(seq_by_week$genomes_submittable), length(subset(df_run_weeks, is_voi)$sample), length(subset(df_run_weeks, is_voc)$sample)))
 ```
 
 <!-- % setup header -->
@@ -142,6 +144,8 @@ This report, generated on `r params$date`, summarizes our sequencing activity fo
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 kable(snapshot, col.names = c(' &nbsp;', paste('week ending', latest_epiweek), 'cumulative total'))
 ```
+
+CDC definitions of Variants of Concern (VoCs) and Variants of Interest (VoIs) are available at: https://www.cdc.gov/coronavirus/2019-ncov/cases-updates/variant-surveillance/variant-info.html
 
 \vspace{0.25in}
 
@@ -265,7 +269,7 @@ kable(vocs_by_week, col.names = gsub("[_]", " ", names(vocs_by_week)))
 ### Nextclade classifications vs sample collection date
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
-ggplot(subset(df_collection_weeks, genome_status != "failed_sequencing")) +
+ggplot(subset(df_collection_weeks, genome_status != "failed_sequencing"), height=3, width=6, units='in') +
   geom_histogram(aes(epiweek_end, fill=nextclade_clade)) +
 	scale_fill_brewer(palette='Set1')
 ```
