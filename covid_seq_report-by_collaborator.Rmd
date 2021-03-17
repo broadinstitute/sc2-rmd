@@ -93,7 +93,7 @@ df_collection_weeks <- merge(df_assemblies, week_calendar, by.x='collection_date
 df_run_weeks <- merge(df_assemblies, week_calendar, by.x='run_date', by.y='date', all.x=TRUE)
 
 df_run_weeks %>%
-  ddply(.(epiweek_end,genome_status), summarise, n=length(sample)) %>%
+  ddply(.(epiweek_end,genome_status), .drop=FALSE, summarise, n=length(sample)) %>%
   pivot_wider(names_from=genome_status, values_from=n) -> seq_by_week
 seq_by_week$attempted <- seq_by_week$failed_sequencing + seq_by_week$failed_annotation + seq_by_week$submittable
 seq_by_week$genomes <- seq_by_week$failed_annotation + seq_by_week$submittable
@@ -111,7 +111,7 @@ df_run_weeks %>%
   subset(epiweek_end == latest_epiweek) ->
   df_latest_week
 df_latest_week %>%
-  ddply(.(genome_status), summarise, n=length(sample)) %>%
+  ddply(.(genome_status), .drop=FALSE, summarise, n=length(sample)) %>%
   pivot_wider(names_from=genome_status, values_from=n) ->
   latest_counts
 df_latest_week %>% subset(is_voc) %>% nrow -> latest_counts$voc
@@ -235,7 +235,7 @@ df_collection_weeks %>%
   subset(!is.na(epiweek_end)) -> x
 if(nrow(x) > 0) {
   x %>%
-    ddply(.(epiweek_end,pango_lineage), summarise, n=length(sample)) %>%
+    ddply(.(epiweek_end,pango_lineage), .drop=FALSE, summarise, n=length(sample)) %>%
     pivot_wider(names_from=pango_lineage, values_from=n, values_fill=0) %>%
     rename(Collection_epiweek_ending = epiweek_end) -> vocs_by_week
 } else {
