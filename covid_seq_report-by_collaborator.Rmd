@@ -149,7 +149,7 @@ This report, generated on `r params$date`, summarizes our sequencing activity fo
 kable(snapshot, col.names = c(' &nbsp;', paste('week ending', latest_epiweek), 'cumulative total'))
 ```
 
-CDC definitions of Variants of Concern (VoCs) and Variants of Interest (VoIs) are available at: https://www.cdc.gov/coronavirus/2019-ncov/cases-updates/variant-surveillance/variant-info.html
+CDC definitions of Variants of Concern (VoCs) and Variants of Interest (VoIs) are available at: \texttt{https://www.cdc.gov/coronavirus/2019-ncov/cases-updates/variant-surveillance/variant-info.html}
 
 ## Sequencing activity over time and space
 
@@ -190,11 +190,9 @@ ggplot(df_assemblies) + geom_histogram(aes(run_date, fill=genome_status)) +
 This describes the total number of patient samples sequenced in this data set,
 plotted by the date of the sequencing run in our lab.
 
-"Submittable" genomes pass all QC checks and are quickly released to public genome repositories.
-"Failed sequencing" are samples that failed to produce at least `r sprintf("%d", params$min_unambig)` unambiguous base pairs of
-viral genome. Raw data from these samples are submitted to NCBI's SRA database, but the genomes
-are not used for any analyses. "Failed annotation" are samples that produced a sufficiently complete
-genome, but did not pass NCBI's VADR quality checks.
+\textbf{Submittable} genomes pass all QC checks and are quickly released to public genome repositories.
+\textbf{Failed sequencing} are samples that failed to produce at least `r sprintf("%d", params$min_unambig)` unambiguous base pairs of viral genome. Raw data from these samples are submitted to NCBI's SRA database, but the genomes are not used for any analyses. 
+\textbf{Failed annotation} are samples that produced a sufficiently complete genome, but did not pass NCBI's VADR quality checks.
 
 ### Tabular view by CDC epiweek
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
@@ -243,7 +241,7 @@ df_collection_weeks %>%
 if(nrow(x) > 0) {
   x %>%
     ddply(.(epiweek_end,pango_lineage), .drop=FALSE, summarise, n=length(sample)) %>%
-    pivot_wider(names_from=pango_lineage, values_from=n, values_fill=0) %>%
+    pivot_wider(names_from=pango_lineage, values_from=n, values_fill=0, names_sort=TRUE) %>%
     rename(Collection_epiweek_ending = epiweek_end) -> vocs_by_week
 } else {
   vocs_by_week <- data.frame(matrix(ncol = 1, nrow = 0))
@@ -252,13 +250,33 @@ if(nrow(x) > 0) {
 kable(vocs_by_week, col.names = gsub("[_]", " ", names(vocs_by_week)))
 ```
 
-### Nextclade classifications vs sample collection date
+### Variants of Interest (VoIs) by CDC epiweek of sample collection
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
-ggplot(subset(df_collection_weeks, genome_status != "failed_sequencing"), height=3, width=6, units='in') +
-  geom_histogram(aes(epiweek_end, fill=nextclade_clade)) +
-	scale_fill_brewer(palette='Set1')
+df_collection_weeks %>%
+  subset(genome_status != 'failed_sequencing') %>%
+  subset(pango_lineage %in% reportable_vois) %>%
+  subset(!is.na(epiweek_end)) -> x
+if(nrow(x) > 0) {
+  x %>%
+    ddply(.(epiweek_end,pango_lineage), .drop=FALSE, summarise, n=length(sample)) %>%
+    pivot_wider(names_from=pango_lineage, values_from=n, values_fill=0, names_sort=TRUE) %>%
+    rename(Collection_epiweek_ending = epiweek_end) -> vois_by_week
+} else {
+  vois_by_week <- data.frame(matrix(ncol = 1, nrow = 0))
+  colnames(vois_by_week) <- 'Collection epiweek ending'
+}
+kable(vois_by_week, col.names = gsub("[_]", " ", names(vois_by_week)))
 ```
 
-This shows the breakdown of major phylogenetic clades over time, using the Nextclade naming system. Variants of Concern (VoCs) are highlighted as specially named Nextclade clades. Nextclade clade 20I/501Y.V1 corresponds to PANGO lineage B.1.1.7, 20H/501Y.V2 corresponds to B.1.351, and 20J/501Y.V3 corresponds to P.1.
+CDC definitions of Variants of Concern (VoCs) and Variants of Interest (VoIs) are available at: \texttt{https://www.cdc.gov/coronavirus/2019-ncov/cases-updates/variant-surveillance/variant-info.html}
 
+### Nextclade classifications vs sample collection date
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.width=6, fig.height=3}
+ggplot(subset(df_collection_weeks, genome_status != "failed_sequencing"), height=3, width=6, units='in') +
+  geom_histogram(aes(epiweek_end, fill=nextclade_clade)) +
+  scale_fill_brewer(palette='Set1')
+```
+
+This shows the breakdown of major phylogenetic clades over time, using the Nextclade naming system. Variants of Concern (VoCs) are highlighted as specially named Nextclade clades. Nextclade clade 20I/501Y.V1 corresponds to PANGO lineage B.1.1.7, 20H/501Y.V2 corresponds to B.1.351, and 20J/501Y.V3 corresponds to P.1. At this time, no other VoC or VoI lineages have dedicated Nextclade definitions.
