@@ -151,6 +151,8 @@ kable(snapshot, col.names = c(' &nbsp;', paste('week ending', latest_epiweek), '
 
 CDC definitions of Variants of Concern (VoCs) and Variants of Interest (VoIs) are available at: \texttt{https://www.cdc.gov/coronavirus/2019-ncov/cases-updates/variant-surveillance/variant-info.html}
 
+\newpage
+
 ## Sequencing activity over time and space
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.width=6, fig.height=1.75}
