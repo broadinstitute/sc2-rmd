@@ -235,10 +235,10 @@ if __name__ == '__main__':
                         help='Threshold for considering a genome successful. (default: %(default)s)')
 
     parser.add_argument('--voc_list',
-                        default="B.1.1.7,B.1.351,P.1,B.1.427,B.1.429",
+                        default="B.1.1.7,B.1.351,B.1.351.1,B.1.351.2,P.1,B.1.427,B.1.429",
                         help='Comma separated list of Pangolin lineages that are official Variants of Concern. (default: %(default)s)')
     parser.add_argument('--voi_list',
-                        default="B.1.525,B.1.526,P.2",
+                        default="B.1.525,B.1.526,B.1.526.1,B.1.526.2,P.2",
                         help='Comma separated list of Pangolin lineages that are official Variants of Interest. (default: %(default)s)')
 
     args = parser.parse_args()
