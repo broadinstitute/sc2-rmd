@@ -118,12 +118,27 @@ df_latest_week %>%
   ddply(.(genome_status), .drop=FALSE, summarise, n=length(sample)) %>%
   pivot_wider(names_from=genome_status, values_from=n) ->
   latest_counts
-df_latest_week %>% subset(is_voc) %>% nrow -> latest_counts$voc
-df_latest_week %>% subset(is_voi) %>% nrow -> latest_counts$voi
+df_latest_week %>%
+  subset(genome_status=='submittable') %>%
+  subset(is_voc) %>%
+  nrow -> latest_counts$voc
+df_latest_week %>%
+  subset(genome_status=='submittable') %>%
+  subset(is_voi) %>%
+  nrow -> latest_counts$voi
+df_run_weeks %>%
+  subset(genome_status=='submittable') %>%
+  subset(is_voc) %>%
+  nrow -> cumulative_counts_voc
+df_run_weeks %>%
+  subset(genome_status=='submittable') %>%
+  subset(is_voi) %>%
+  nrow -> cumulative_counts_voi
+
 snapshot <- data.frame(
   stat = c('samples sequenced', 'genomes assembled', 'genomes submittable', 'Variants of Interest (VoIs)', 'Variants of Concern (VoCs)'),
   last_week = c(latest_counts$failed_sequencing + latest_counts$failed_annotation + latest_counts$submittable, latest_counts$failed_annotation + latest_counts$submittable, latest_counts$submittable, latest_counts$voi, latest_counts$voc),
-  cumulative = c(sum(seq_by_week$samples_sequenced), sum(seq_by_week$genomes_assembled), sum(seq_by_week$genomes_submittable), length(subset(df_run_weeks, is_voi)$sample), length(subset(df_run_weeks, is_voc)$sample)))
+  cumulative = c(sum(seq_by_week$samples_sequenced), sum(seq_by_week$genomes_assembled), sum(seq_by_week$genomes_submittable), cumulative_counts_voi, cumulative_counts_voc)
 ```
 
 <!-- % setup header -->
