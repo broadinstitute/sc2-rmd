@@ -15,9 +15,9 @@ import numpy as np
 
 def load_data(assemblies_tsv, collab_tsv, min_unambig, min_date, max_date):
 
-    df_assemblies = pd.read_csv(assemblies_tsv, sep='\t')
+    df_assemblies = pd.read_csv(assemblies_tsv, sep='\t').dropna(how='all')
     if collab_tsv and os.path.isfile(collab_tsv) and os.path.getsize(collab_tsv):
-        collab_ids = pd.read_csv(collab_tsv, sep='\t')[list(['external_id', 'collaborator_id'])]
+        collab_ids = pd.read_csv(collab_tsv, sep='\t').dropna(how='all')[list(['external_id', 'collaborator_id'])]
         collab_ids.columns = ['sample', 'collaborator_id']
     else:
         collab_ids = pd.DataFrame(columns = ['sample', 'collaborator_id']) 
@@ -29,7 +29,17 @@ def load_data(assemblies_tsv, collab_tsv, min_unambig, min_date, max_date):
         ~df_assemblies['collection_date'].isna() &
         (df_assemblies['run_date'] != 'missing') &
         (df_assemblies['collection_date'] != 'missing')]
-    df_assemblies = df_assemblies.astype({'collection_date':np.datetime64,'run_date':np.datetime64})
+    df_assemblies = df_assemblies.astype({'collection_date':'datetime64[D]','run_date':'datetime64[D]'})
+
+    # fix vadr_num_alerts
+    df_assemblies = df_assemblies.astype({'vadr_num_alerts':'Int64'})
+
+    # remove columns with File URIs if requested
+    df_assemblies.drop(columns=[
+        'assembly_fasta','coverage_plot','aligned_bam','replicate_discordant_vcf',
+        'variants_from_ref_vcf','nextclade_tsv','nextclade_json',
+        'pangolin_csv','vadr_tgz','vadr_alerts',
+        ], inplace=True)
 
     # subset by date range
     if min_date:
