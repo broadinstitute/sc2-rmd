@@ -115,19 +115,19 @@ df_latest_week %>%
   pivot_wider(names_from=genome_status, values_from=n) ->
   latest_counts
 df_latest_week %>%
-  subset(genome_status=='submittable') %>%
+  subset(genome_status != "failed_sequencing") %>%
   subset(is_voc) %>%
   nrow -> latest_counts$voc
 df_latest_week %>%
-  subset(genome_status=='submittable') %>%
+  subset(genome_status != "failed_sequencing") %>%
   subset(is_voi) %>%
   nrow -> latest_counts$voi
 df_run_weeks %>%
-  subset(genome_status=='submittable') %>%
+  subset(genome_status != "failed_sequencing") %>%
   subset(is_voc) %>%
   nrow -> cumulative_counts_voc
 df_run_weeks %>%
-  subset(genome_status=='submittable') %>%
+  subset(genome_status != "failed_sequencing") %>%
   subset(is_voi) %>%
   nrow -> cumulative_counts_voi
 
