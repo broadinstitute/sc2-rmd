@@ -22,7 +22,6 @@ def load_data(assemblies_tsv, collab_tsv, min_unambig, min_date, max_date):
     else:
         collab_ids = pd.DataFrame(columns = ['sample', 'collaborator_id']) 
 
-
     # format dates properly
     df_assemblies = df_assemblies.loc[
         ~df_assemblies['run_date'].isna() &
@@ -102,25 +101,24 @@ def main(args):
         'bioproject_accession',
         'genome_status',
         ])
+    df_assemblies.to_csv("report-{}-everything-{}.tsv".format(
+        sequencing_lab_sanitized, date_string), sep='\t', index=False)
     subprocess.check_call([
         'R', '--vanilla', '--no-save', '-e',
         """rmarkdown::render('/docker/covid_seq_report-everything.Rmd',
             output_file='report-{}-everything-{}.pdf',
             output_dir='./',
             params = list(
-                assemblies_tsv = '{}',
-                collab_ids_tsv = '{}',
+                assemblies_tsv = 'report-{}-everything-{}.tsv',
                 sequencing_lab = '{}',
                 intro_blurb = '{}',
                 voc_list = '{}',
                 voi_list = '{}',
-                {}
-                min_date = '{}',
                 min_unambig = {:d}))
         """.format(sequencing_lab_sanitized, date_string,
-            args.assemblies_tsv, args.collab_tsv, args.sequencing_lab, args.intro_blurb,
-            args.voc_list, args.voi_list,
-            ("max_date = '{}', ".format(args.max_date) if args.max_date else ""), args.min_date, args.min_unambig),
+            sequencing_lab_sanitized, date_string,
+            args.sequencing_lab, args.intro_blurb,
+            args.voc_list, args.voi_list, args.min_unambig),
         ])
 
 
@@ -128,28 +126,6 @@ def main(args):
     for state in states_all:
         print("making reports for state '{}'".format(state))
         state_sanitized = state.replace(' ', '_')
-        subprocess.check_call([
-            'R', '--vanilla', '--no-save', '-e',
-            """rmarkdown::render('/docker/covid_seq_report-by_state.Rmd',
-                output_file='report-{}-by_state-{}-{}.pdf',
-                output_dir='./',
-                params = list(
-                    state = '{}',
-                    assemblies_tsv = '{}',
-                    collab_ids_tsv = '{}',
-                    sequencing_lab = '{}',
-                    intro_blurb = '{}',
-                    voc_list = '{}',
-                    voi_list = '{}',
-                    {}
-                    min_date = '{}',
-                    min_unambig = {:d}))
-            """.format(sequencing_lab_sanitized, state_sanitized, date_string,
-                state, args.assemblies_tsv, args.collab_tsv, args.sequencing_lab, args.intro_blurb,
-                args.voc_list, args.voi_list,
-                ("max_date = '{}', ".format(args.max_date) if args.max_date else ""), args.min_date, args.min_unambig),
-            ])
-
         df = df_assemblies.query('geo_state == "{}"'.format(state))
         df.to_excel('report-{}-by_state-{}-{}-per_sample.xlsx'.format(
             sequencing_lab_sanitized, state_sanitized, date_string),
@@ -173,33 +149,33 @@ def main(args):
             'bioproject_accession',
             'genome_status',
             ])
-
-    # per-collab PDFs and XLSXs
-    for collab in collaborators_all:
-        print("making reports for collaborator '{}'".format(collab))
-        collab_sanitized = collab.replace(' ', '_')
+        df.to_csv("report-{}-by_state-{}-{}-per_sample.tsv".format(
+            sequencing_lab_sanitized, state_sanitized, date_string),
+            sep='\t', index=False)
         subprocess.check_call([
             'R', '--vanilla', '--no-save', '-e',
-            """rmarkdown::render('/docker/covid_seq_report-by_collaborator.Rmd',
-                output_file='report-{}-by_lab-{}-{}.pdf',
+            """rmarkdown::render('/docker/covid_seq_report-by_state.Rmd',
+                output_file='report-{}-by_state-{}-{}.pdf',
                 output_dir='./',
                 params = list(
-                    collab = '{}',
-                    assemblies_tsv = '{}',
-                    collab_ids_tsv = '{}',
+                    state = '{}',
+                    assemblies_tsv = 'report-{}-by_state-{}-{}-per_sample.tsv',
                     sequencing_lab = '{}',
                     intro_blurb = '{}',
                     voc_list = '{}',
                     voi_list = '{}',
-                    {}
-                    min_date = '{}',
                     min_unambig = {:d}))
-            """.format(sequencing_lab_sanitized, collab_sanitized, date_string,
-                collab, args.assemblies_tsv, args.collab_tsv, args.sequencing_lab, args.intro_blurb,
-                args.voc_list, args.voi_list,
-                ("max_date = '{}', ".format(args.max_date) if args.max_date else ""), args.min_date, args.min_unambig),
+            """.format(sequencing_lab_sanitized, state_sanitized, date_string,
+                state,
+                sequencing_lab_sanitized, state_sanitized, date_string,
+                args.sequencing_lab, args.intro_blurb,
+                args.voc_list, args.voi_list, args.min_unambig),
             ])
-
+        
+    # per-collab PDFs and XLSXs
+    for collab in collaborators_all:
+        print("making reports for collaborator '{}'".format(collab))
+        collab_sanitized = collab.replace(' ', '_')
         df = df_assemblies.query('collected_by == "{}"'.format(collab))
         df.to_excel('report-{}-by_lab-{}-{}-per_sample.xlsx'.format(
             sequencing_lab_sanitized, collab_sanitized, date_string),
@@ -223,6 +199,29 @@ def main(args):
             'bioproject_accession',
             'genome_status',
             ])
+        df.to_csv("report-{}-by_lab-{}-{}-per_sample.tsv".format(
+            sequencing_lab_sanitized, state_sanitized, date_string),
+            sep='\t', index=False)
+        subprocess.check_call([
+            'R', '--vanilla', '--no-save', '-e',
+            """rmarkdown::render('/docker/covid_seq_report-by_collaborator.Rmd',
+                output_file='report-{}-by_lab-{}-{}.pdf',
+                output_dir='./',
+                params = list(
+                    collab = '{}',
+                    assemblies_tsv = 'report-{}-by_lab-{}-{}-per_sample.tsv',
+                    sequencing_lab = '{}',
+                    intro_blurb = '{}',
+                    voc_list = '{}',
+                    voi_list = '{}',
+                    min_unambig = {:d}))
+            """.format(sequencing_lab_sanitized, collab_sanitized, date_string,
+                collab, 
+                sequencing_lab_sanitized, collab_sanitized, date_string,
+                args.sequencing_lab, args.intro_blurb,
+                args.voc_list, args.voi_list, args.min_unambig),
+            ])
+
 
 
 if __name__ == '__main__':

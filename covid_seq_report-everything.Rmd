@@ -10,10 +10,7 @@ params:
   sequencing_lab: "Example Sequencing Lab"
   intro_blurb: "Example introductory paragraph that describes how Example Sequencing Lab has been engaged in viral sequencing of COVID-19."
   assemblies_tsv: "assemblies.tsv"
-  collab_ids_tsv: "collab_ids.tsv"
   date: !r Sys.Date()
-  max_date: !r Sys.Date()
-  min_date: "2020-01-01"
   min_unambig: 24000
   voc_list: "B.1.1.7,B.1.351,P.1,B.1.427,B.1.429,B.1.429.1"
   voi_list: "B.1.525,B.1.526,P.2"
@@ -40,45 +37,19 @@ library(sf)
 
 ```{r, load-data, echo=FALSE}
 df_assemblies = read.table(params$assemblies_tsv, sep='\t', header=TRUE)
-collab_ids = read.table(params$collab_ids_tsv, sep='\t', header=TRUE)[c('external_id', 'collaborator_id')]
-collab_ids <- rename(collab_ids, sample = external_id)
 ```
 
 ```{r, transform-data, echo=FALSE}
-
-# derived column: genome_status
-df_assemblies <- mutate(df_assemblies, genome_status = case_when(
-  assembly_length_unambiguous < params$min_unambig ~ "failed_sequencing",
-  vadr_num_alerts > 0 ~ "failed_annotation",
-  TRUE ~ "submittable"
-))
-df_assemblies$genome_status = factor(df_assemblies$genome_status, levels=c('failed_sequencing', 'failed_annotation', 'submittable'))
-
-# derived columns: geo_country, geo_state, geo_locality
-df_assemblies$geo_country <- sapply(str_split(df_assemblies$geo_loc_name, ": "), function(x) x[1])
-df_assemblies$geo_state <- sapply(str_split(sapply(str_split(df_assemblies$geo_loc_name, ": "), function(x) x[2]), ", "), function(y) y[1])
-df_assemblies$geo_locality <- sapply(str_split(sapply(str_split(df_assemblies$geo_loc_name, ": "), function(x) x[2]), ", "), function(y) y[2])
 
 # fix dates
 df_assemblies$run_date <- as.Date(df_assemblies$run_date)
 df_assemblies$collection_date <- as.Date(df_assemblies$collection_date)
 
-# filter to earliest allowed run_date (every single library, including controls, should have this field)
-df_assemblies %>%
-  subset(!is.na(run_date)) %>%
-  subset(as.Date(params$min_date) <= run_date) %>%
-  subset(run_date <= as.Date(params$max_date)) ->
-  df_assemblies
-
 # fix missing data in purpose_of_sequencing
 df_assemblies[is.na(df_assemblies$purpose_of_sequencing)] <- 'Missing'
-# todo: replace '' with 'Missing'
 
 # derived column: sample_age_at_runtime
 df_assemblies$sample_age_at_runtime <- df_assemblies$run_date - df_assemblies$collection_date
-
-# join column: collaborator_id
-df_assemblies <- merge(df_assemblies, collab_ids, by="sample", all.x=TRUE)
 
 # subset to good
 df_good <- subset(df_assemblies, genome_status != "failed_sequencing")
@@ -305,7 +276,7 @@ CDC definitions of Variants of Concern (VoCs) and Variants of Interest (VoIs) ar
 ```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.width=6, fig.height=3}
 ggplot(subset(df_collection_weeks, genome_status != "failed_sequencing"), height=3, width=6, units='in') +
   geom_histogram(aes(epiweek_end, fill=nextclade_clade)) +
-	scale_fill_brewer(palette='Set1')
+	scale_fill_brewer(palette='Set3')
 ```
 
 This shows the breakdown of major phylogenetic clades over time, using the Nextclade naming system. Variants of Concern (VoCs) are highlighted as specially named Nextclade clades. Nextclade clade 20I/501Y.V1 corresponds to PANGO lineage B.1.1.7, 20H/501Y.V2 corresponds to B.1.351, and 20J/501Y.V3 corresponds to P.1. At this time, no other VoC or VoI lineages have dedicated Nextclade definitions.
