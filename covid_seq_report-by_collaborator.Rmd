@@ -41,6 +41,8 @@ df_assemblies = read.table(params$assemblies_tsv, sep='\t', header=TRUE)
 ```
 
 ```{r, transform-data, echo=FALSE}
+# set factor levels for genome_status
+df_assemblies$genome_status = factor(df_assemblies$genome_status, levels=c('failed_sequencing', 'failed_annotation', 'submittable'))
 
 # fix dates
 df_assemblies$run_date <- as.Date(df_assemblies$run_date)
@@ -65,12 +67,14 @@ df_run_weeks <- merge(df_assemblies, week_calendar, by.x='run_date', by.y='date'
 
 df_run_weeks %>%
   ddply(.(epiweek_end,genome_status), .drop=FALSE, summarise, n=length(sample)) %>%
-  pivot_wider(names_from=genome_status, values_from=n) -> seq_by_week
-seq_by_week$attempted <- seq_by_week$failed_sequencing + seq_by_week$failed_annotation + seq_by_week$submittable
-seq_by_week$genomes <- seq_by_week$failed_annotation + seq_by_week$submittable
-seq_by_week <- seq_by_week %>%
+  pivot_wider(names_from=genome_status, values_from=n, values_fill=0) %>%
+  mutate(
+    attempted = failed_sequencing + failed_annotation + submittable,
+    genomes = failed_annotation + submittable
+  ) %>%
   subset(select = c(epiweek_end, attempted, genomes, submittable)) %>%
-  rename(epiweek_ending = epiweek_end, samples_sequenced=attempted, genomes_assembled=genomes, genomes_submittable=submittable)
+  rename(epiweek_ending = epiweek_end, samples_sequenced=attempted, genomes_assembled=genomes, genomes_submittable=submittable) ->
+  seq_by_week
 
 # latest week stats
 earliest_rundate <- min(df_assemblies$run_date)
@@ -106,7 +110,7 @@ df_run_weeks %>%
 snapshot <- data.frame(
   stat = c('samples sequenced', 'genomes assembled', 'genomes submittable', 'Variants of Interest (VoIs)', 'Variants of Concern (VoCs)'),
   last_week = c(latest_counts$failed_sequencing + latest_counts$failed_annotation + latest_counts$submittable, latest_counts$failed_annotation + latest_counts$submittable, latest_counts$submittable, latest_counts$voi, latest_counts$voc),
-  cumulative = c(sum(seq_by_week$samples_sequenced), sum(seq_by_week$genomes_assembled), sum(seq_by_week$genomes_submittable), cumulative_counts_voi, cumulative_counts_voc)
+  cumulative = c(sum(seq_by_week$samples_sequenced), sum(seq_by_week$genomes_assembled), sum(seq_by_week$genomes_submittable), cumulative_counts_voi, cumulative_counts_voc))
 ```
 
 <!-- % setup header -->

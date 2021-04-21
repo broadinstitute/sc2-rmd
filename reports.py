@@ -3,6 +3,7 @@
 __author__ = "dpark@broadinstitute.org"
 
 import os
+import os.path
 import sys
 import subprocess
 import argparse
@@ -79,8 +80,8 @@ def main(args):
     date_string = datetime.date.today().strftime("%Y_%m_%d")
 
     # the everything reports
-    df_assemblies.to_excel('report-{}-everything-{}.xlsx'.format(
-        sequencing_lab_sanitized, date_string),
+    out_basename = 'report-{}-everything-{}'.format(sequencing_lab_sanitized, date_string)
+    df_assemblies.to_excel('{}.xlsx'.format(out_basename),
         index=False, freeze_panes=(1,1),
         columns=[
         'sample',
@@ -101,22 +102,20 @@ def main(args):
         'bioproject_accession',
         'genome_status',
         ])
-    df_assemblies.to_csv("report-{}-everything-{}.tsv".format(
-        sequencing_lab_sanitized, date_string), sep='\t', index=False)
+    df_assemblies.to_csv("{}.tsv".format(out_basename), sep='\t', index=False)
     subprocess.check_call([
         'R', '--vanilla', '--no-save', '-e',
         """rmarkdown::render('/docker/covid_seq_report-everything.Rmd',
-            output_file='report-{}-everything-{}.pdf',
+            output_file='{}.pdf',
             output_dir='./',
             params = list(
-                assemblies_tsv = 'report-{}-everything-{}.tsv',
+                assemblies_tsv = '{}.tsv',
                 sequencing_lab = '{}',
                 intro_blurb = '{}',
                 voc_list = '{}',
                 voi_list = '{}',
                 min_unambig = {:d}))
-        """.format(sequencing_lab_sanitized, date_string,
-            sequencing_lab_sanitized, date_string,
+        """.format(out_basename, os.path.join(os.getcwd(), out_basename),
             args.sequencing_lab, args.intro_blurb,
             args.voc_list, args.voi_list, args.min_unambig),
         ])
@@ -126,9 +125,10 @@ def main(args):
     for state in states_all:
         print("making reports for state '{}'".format(state))
         state_sanitized = state.replace(' ', '_')
+        out_basename = "report-{}-by_state-{}-{}".format(
+            sequencing_lab_sanitized, state_sanitized, date_string)
         df = df_assemblies.query('geo_state == "{}"'.format(state))
-        df.to_excel('report-{}-by_state-{}-{}-per_sample.xlsx'.format(
-            sequencing_lab_sanitized, state_sanitized, date_string),
+        df.to_excel('{}-per_sample.xlsx'.format(out_basename),
             index=False, freeze_panes=(1,1),
             columns=[
             'sample',
@@ -149,25 +149,22 @@ def main(args):
             'bioproject_accession',
             'genome_status',
             ])
-        df.to_csv("report-{}-by_state-{}-{}-per_sample.tsv".format(
-            sequencing_lab_sanitized, state_sanitized, date_string),
-            sep='\t', index=False)
+        df.to_csv("{}-per_sample.tsv".format(out_basename), sep='\t', index=False)
         subprocess.check_call([
             'R', '--vanilla', '--no-save', '-e',
             """rmarkdown::render('/docker/covid_seq_report-by_state.Rmd',
-                output_file='report-{}-by_state-{}-{}.pdf',
+                output_file='{}.pdf',
                 output_dir='./',
                 params = list(
                     state = '{}',
-                    assemblies_tsv = 'report-{}-by_state-{}-{}-per_sample.tsv',
+                    assemblies_tsv = '{}-per_sample.tsv',
                     sequencing_lab = '{}',
                     intro_blurb = '{}',
                     voc_list = '{}',
                     voi_list = '{}',
                     min_unambig = {:d}))
-            """.format(sequencing_lab_sanitized, state_sanitized, date_string,
-                state,
-                sequencing_lab_sanitized, state_sanitized, date_string,
+            """.format(out_basename,
+                state, os.path.join(os.getcwd(), out_basename),
                 args.sequencing_lab, args.intro_blurb,
                 args.voc_list, args.voi_list, args.min_unambig),
             ])
@@ -176,9 +173,10 @@ def main(args):
     for collab in collaborators_all:
         print("making reports for collaborator '{}'".format(collab))
         collab_sanitized = collab.replace(' ', '_')
+        out_basename = "report-{}-by_lab-{}-{}".format(
+            sequencing_lab_sanitized, collab_sanitized, date_string)
         df = df_assemblies.query('collected_by == "{}"'.format(collab))
-        df.to_excel('report-{}-by_lab-{}-{}-per_sample.xlsx'.format(
-            sequencing_lab_sanitized, collab_sanitized, date_string),
+        df.to_excel('{}-per_sample.xlsx'.format(out_basename),
             index=False, freeze_panes=(1,1),
             columns=[
             'sample',
@@ -199,25 +197,22 @@ def main(args):
             'bioproject_accession',
             'genome_status',
             ])
-        df.to_csv("report-{}-by_lab-{}-{}-per_sample.tsv".format(
-            sequencing_lab_sanitized, state_sanitized, date_string),
-            sep='\t', index=False)
+        df.to_csv("{}-per_sample.tsv".format(out_basename), sep='\t', index=False)
         subprocess.check_call([
             'R', '--vanilla', '--no-save', '-e',
             """rmarkdown::render('/docker/covid_seq_report-by_collaborator.Rmd',
-                output_file='report-{}-by_lab-{}-{}.pdf',
+                output_file='{}.pdf',
                 output_dir='./',
                 params = list(
                     collab = '{}',
-                    assemblies_tsv = 'report-{}-by_lab-{}-{}-per_sample.tsv',
+                    assemblies_tsv = '{}-per_sample.tsv',
                     sequencing_lab = '{}',
                     intro_blurb = '{}',
                     voc_list = '{}',
                     voi_list = '{}',
                     min_unambig = {:d}))
-            """.format(sequencing_lab_sanitized, collab_sanitized, date_string,
-                collab, 
-                sequencing_lab_sanitized, collab_sanitized, date_string,
+            """.format(out_basename,
+                collab, os.path.join(os.getcwd(), out_basename),
                 args.sequencing_lab, args.intro_blurb,
                 args.voc_list, args.voi_list, args.min_unambig),
             ])
