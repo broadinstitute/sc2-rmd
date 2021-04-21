@@ -35,11 +35,13 @@ def load_data(assemblies_tsv, collab_tsv, min_unambig, min_date, max_date):
     df_assemblies = df_assemblies.astype({'vadr_num_alerts':'Int64'})
 
     # remove columns with File URIs if requested
-    df_assemblies.drop(columns=[
+    cols_unwanted = [
         'assembly_fasta','coverage_plot','aligned_bam','replicate_discordant_vcf',
         'variants_from_ref_vcf','nextclade_tsv','nextclade_json',
         'pangolin_csv','vadr_tgz','vadr_alerts',
-        ], inplace=True)
+    ]
+    cols_unwanted = list(c for c in cols_unwanted if c in df_assemblies.columns)
+    df_assemblies.drop(columns=cols_unwanted, inplace=True)
 
     # subset by date range
     if min_date:
