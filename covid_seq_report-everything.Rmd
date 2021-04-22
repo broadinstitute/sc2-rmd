@@ -41,7 +41,7 @@ df_assemblies = read.table(params$assemblies_tsv, sep='\t', header=TRUE)
 
 ```{r, transform-data, echo=FALSE}
 # set factor levels for genome_status
-df_assemblies$genome_status = factor(df_assemblies$genome_status, levels=c('failed_sequencing', 'failed_annotation', 'submittable'))
+df_assemblies$genome_status = factor(df_assemblies$genome_status, levels=c('failed_sequencing', 'failed_NTC', 'failed_annotation', 'submittable'))
 
 # fix dates
 df_assemblies$run_date <- as.Date(df_assemblies$run_date)
@@ -54,7 +54,7 @@ df_assemblies[is.na(df_assemblies$purpose_of_sequencing)] <- 'Missing'
 df_assemblies$sample_age_at_runtime <- df_assemblies$run_date - df_assemblies$collection_date
 
 # subset to good
-df_good <- subset(df_assemblies, genome_status != "failed_sequencing")
+df_good <- subset(df_assemblies, genome_status %in% c("submittable", "failed_annotation"))
 
 # CDC epiweeks
 data.frame(date=seq(as.Date("2020-01-01"), Sys.Date()+7, by="day")) %>%
@@ -68,7 +68,7 @@ df_run_weeks %>%
   ddply(.(epiweek_end,genome_status), .drop=FALSE, summarise, n=length(sample)) %>%
   pivot_wider(names_from=genome_status, values_from=n, values_fill=0) %>%
   mutate(
-    attempted = failed_sequencing + failed_annotation + submittable,
+    attempted = failed_sequencing + failed_NTC + failed_annotation + submittable,
     genomes = failed_annotation + submittable
   ) %>%
   subset(select = c(epiweek_end, attempted, genomes, submittable)) %>%
@@ -90,25 +90,25 @@ df_latest_week %>%
   pivot_wider(names_from=genome_status, values_from=n) ->
   latest_counts
 df_latest_week %>%
-  subset(genome_status != "failed_sequencing") %>%
+  subset(genome_status %in% c("submittable", "failed_annotation")) %>%
   subset(is_voc) %>%
   nrow -> latest_counts$voc
 df_latest_week %>%
-  subset(genome_status != "failed_sequencing") %>%
+  subset(genome_status %in% c("submittable", "failed_annotation")) %>%
   subset(is_voi) %>%
   nrow -> latest_counts$voi
 df_run_weeks %>%
-  subset(genome_status != "failed_sequencing") %>%
+  subset(genome_status %in% c("submittable", "failed_annotation")) %>%
   subset(is_voc) %>%
   nrow -> cumulative_counts_voc
 df_run_weeks %>%
-  subset(genome_status != "failed_sequencing") %>%
+  subset(genome_status %in% c("submittable", "failed_annotation")) %>%
   subset(is_voi) %>%
   nrow -> cumulative_counts_voi
 
 snapshot <- data.frame(
   stat = c('samples sequenced', 'genomes assembled', 'genomes submittable', 'Variants of Interest (VoIs)', 'Variants of Concern (VoCs)'),
-  last_week = c(latest_counts$failed_sequencing + latest_counts$failed_annotation + latest_counts$submittable, latest_counts$failed_annotation + latest_counts$submittable, latest_counts$submittable, latest_counts$voi, latest_counts$voc),
+  last_week = c(latest_counts$failed_sequencing + latest_counts$failed_annotation + latest_counts$failed_NTC + latest_counts$submittable, latest_counts$failed_annotation + latest_counts$submittable, latest_counts$submittable, latest_counts$voi, latest_counts$voc),
   cumulative = c(sum(seq_by_week$samples_sequenced), sum(seq_by_week$genomes_assembled), sum(seq_by_week$genomes_submittable), cumulative_counts_voi, cumulative_counts_voc))
 ```
 
@@ -239,7 +239,7 @@ A "root-to-tip plot" plots the genetic distance of each sample from Wuhan Hu-1 a
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 df_collection_weeks %>%
-  subset(genome_status != 'failed_sequencing') %>%
+  subset(genome_status %in% c("submittable", "failed_annotation")) %>%
   subset(pango_lineage %in% reportable_vocs) %>%
   subset(!is.na(epiweek_end)) -> x
 if(nrow(x) > 0) {
@@ -258,7 +258,7 @@ kable(vocs_by_week, col.names = gsub("[_]", " ", names(vocs_by_week)))
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 df_collection_weeks %>%
-  subset(genome_status != 'failed_sequencing') %>%
+  subset(genome_status %in% c("submittable", "failed_annotation")) %>%
   subset(pango_lineage %in% reportable_vois) %>%
   subset(!is.na(epiweek_end)) -> x
 if(nrow(x) > 0) {
@@ -278,7 +278,7 @@ CDC definitions of Variants of Concern (VoCs) and Variants of Interest (VoIs) ar
 ### Nextclade classifications vs sample collection date
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.width=6, fig.height=3}
-ggplot(subset(df_collection_weeks, genome_status != "failed_sequencing"), height=3, width=6, units='in') +
+ggplot(subset(df_collection_weeks, genome_status %in% c("submittable", "failed_annotation")), height=3, width=6, units='in') +
   geom_histogram(aes(epiweek_end, fill=nextclade_clade)) +
 	scale_fill_brewer(palette='Set3')
 ```
