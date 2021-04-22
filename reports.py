@@ -34,7 +34,7 @@ def load_data(assemblies_tsv, collab_tsv, min_unambig, min_date, max_date):
     # fix vadr_num_alerts
     df_assemblies = df_assemblies.astype({'vadr_num_alerts':'Int64'})
 
-    # remove columns with File URIs if requested
+    # remove columns with File URIs
     cols_unwanted = [
         'assembly_fasta','coverage_plot','aligned_bam','replicate_discordant_vcf',
         'variants_from_ref_vcf','nextclade_tsv','nextclade_json',
@@ -53,16 +53,20 @@ def load_data(assemblies_tsv, collab_tsv, min_unambig, min_date, max_date):
     df_assemblies.loc[:,'purpose_of_sequencing'] = df_assemblies.loc[:,'purpose_of_sequencing'].fillna('Missing').replace('', 'Missing')
 
     # derived column: genome_status
-    df_assemblies.loc[:,'genome_status'] = list(
+    if 'genome_status' not in df_assemblies.columns:
+        df_assemblies.loc[:,'genome_status'] = list(
             'failed_sequencing' if df_assemblies.loc[id, 'assembly_length_unambiguous'] < min_unambig
             else 'failed_annotation' if df_assemblies.loc[id, 'vadr_num_alerts'] > 0
             else 'submittable'
             for id in df_assemblies.index)
 
     # derived columns: geo_country, geo_state, geo_locality
-    df_assemblies.loc[:,'geo_country'] = list(g.split(': ')[0] if not pd.isna(g) else '' for g in df_assemblies.loc[:,'geo_loc_name'])
-    df_assemblies.loc[:,'geo_state'] = list(g.split(': ')[1].split(', ')[0] if not pd.isna(g) else '' for g in df_assemblies.loc[:,'geo_loc_name'])
-    df_assemblies.loc[:,'geo_locality'] = list(g.split(': ')[1].split(', ')[1] if not pd.isna(g) and ', ' in g else '' for g in df_assemblies.loc[:,'geo_loc_name'])
+    if 'geo_country' not in df_assemblies.columns:
+        df_assemblies.loc[:,'geo_country'] = list(g.split(': ')[0] if not pd.isna(g) else '' for g in df_assemblies.loc[:,'geo_loc_name'])
+    if 'geo_state' not in df_assemblies.columns:
+        df_assemblies.loc[:,'geo_state'] = list(g.split(': ')[1].split(', ')[0] if not pd.isna(g) else '' for g in df_assemblies.loc[:,'geo_loc_name'])
+    if 'geo_locality' not in df_assemblies.columns:
+        df_assemblies.loc[:,'geo_locality'] = list(g.split(': ')[1].split(', ')[1] if not pd.isna(g) and ', ' in g else '' for g in df_assemblies.loc[:,'geo_loc_name'])
 
     # join column: collaborator_id
     df_assemblies = df_assemblies.merge(collab_ids, on='sample', how='left', validate='one_to_one')
@@ -81,13 +85,12 @@ def main(args):
     sequencing_lab_sanitized = args.sequencing_lab.replace(' ', '_')
     date_string = datetime.date.today().strftime("%Y_%m_%d")
 
-    # the everything reports
-    out_basename = 'report-{}-everything-{}'.format(sequencing_lab_sanitized, date_string)
-    df_assemblies.to_excel('{}.xlsx'.format(out_basename),
-        index=False, freeze_panes=(1,1),
-        columns=[
+    # prep output columns
+    reordered_cols = [
         'sample',
         'collaborator_id',
+        'hl7_message_id',
+        'internal_id',
         'biosample_accession',
         'pango_lineage',
         'nextclade_clade',
@@ -103,7 +106,14 @@ def main(args):
         'amplicon_set',
         'bioproject_accession',
         'genome_status',
-        ])
+    ]
+    reordered_cols = list(c for c in reordered_cols if c in df_assemblies.columns)
+    reordered_cols.extend([c for c in df_assemblies.columns if c not in reordered_cols])
+
+    # the everything reports
+    out_basename = 'report-{}-everything-{}'.format(sequencing_lab_sanitized, date_string)
+    df_assemblies.to_excel('{}.xlsx'.format(out_basename),
+        index=False, freeze_panes=(1,1), columns=reordered_cols)
     df_assemblies.to_csv("{}.tsv".format(out_basename), sep='\t', index=False)
     subprocess.check_call([
         'R', '--vanilla', '--no-save', '-e',
@@ -131,26 +141,7 @@ def main(args):
             sequencing_lab_sanitized, state_sanitized, date_string)
         df = df_assemblies.query('geo_state == "{}"'.format(state))
         df.to_excel('{}-per_sample.xlsx'.format(out_basename),
-            index=False, freeze_panes=(1,1),
-            columns=[
-            'sample',
-            'collaborator_id',
-            'biosample_accession',
-            'pango_lineage',
-            'nextclade_clade',
-            'geo_loc_name',
-            'collection_date',
-            'run_date',
-            'assembly_length_unambiguous',
-            'vadr_num_alerts',
-            'nextclade_aa_subs',
-            'nextclade_aa_dels',
-            'collected_by',
-            'purpose_of_sequencing',
-            'amplicon_set',
-            'bioproject_accession',
-            'genome_status',
-            ])
+            index=False, freeze_panes=(1,1), columns=reordered_cols)
         df.to_csv("{}-per_sample.tsv".format(out_basename), sep='\t', index=False)
         subprocess.check_call([
             'R', '--vanilla', '--no-save', '-e',
@@ -179,26 +170,7 @@ def main(args):
             sequencing_lab_sanitized, collab_sanitized, date_string)
         df = df_assemblies.query('collected_by == "{}"'.format(collab))
         df.to_excel('{}-per_sample.xlsx'.format(out_basename),
-            index=False, freeze_panes=(1,1),
-            columns=[
-            'sample',
-            'collaborator_id',
-            'biosample_accession',
-            'pango_lineage',
-            'nextclade_clade',
-            'geo_loc_name',
-            'collection_date',
-            'run_date',
-            'assembly_length_unambiguous',
-            'vadr_num_alerts',
-            'nextclade_aa_subs',
-            'nextclade_aa_dels',
-            'collected_by',
-            'purpose_of_sequencing',
-            'amplicon_set',
-            'bioproject_accession',
-            'genome_status',
-            ])
+            index=False, freeze_panes=(1,1), columns=reordered_cols)
         df.to_csv("{}-per_sample.tsv".format(out_basename), sep='\t', index=False)
         subprocess.check_call([
             'R', '--vanilla', '--no-save', '-e',
@@ -218,7 +190,6 @@ def main(args):
                 args.sequencing_lab, args.intro_blurb,
                 args.voc_list, args.voi_list, args.min_unambig),
             ])
-
 
 
 if __name__ == '__main__':
