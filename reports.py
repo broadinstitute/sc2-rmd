@@ -129,7 +129,7 @@ def main(args):
     out_basename = 'report-{}-everything-{}'.format(sequencing_lab_sanitized, date_string)
     df_assemblies.to_excel('{}.xlsx'.format(out_basename),
         index=False, freeze_panes=(1,1), columns=reordered_cols)
-    df_assemblies.to_csv("{}.tsv".format(out_basename), sep='\t', index=False)
+    df_assemblies.to_csv("{}.tsv".format(out_basename), sep='\t', index=False, columns=reordered_cols)
     subprocess.check_call([
         'R', '--vanilla', '--no-save', '-e',
         """rmarkdown::render('/docker/covid_seq_report-everything.Rmd',
@@ -157,7 +157,7 @@ def main(args):
         df = df_assemblies.query('geo_state == "{}"'.format(state))
         df.to_excel('{}-per_sample.xlsx'.format(out_basename),
             index=False, freeze_panes=(1,1), columns=reordered_cols)
-        df.to_csv("{}-per_sample.tsv".format(out_basename), sep='\t', index=False)
+        df.to_csv("{}-per_sample.tsv".format(out_basename), sep='\t', index=False, columns=reordered_cols)
         subprocess.check_call([
             'R', '--vanilla', '--no-save', '-e',
             """rmarkdown::render('/docker/covid_seq_report-by_state.Rmd',
@@ -186,7 +186,7 @@ def main(args):
         df = df_assemblies.query('collected_by == "{}"'.format(collab))
         df.to_excel('{}-per_sample.xlsx'.format(out_basename),
             index=False, freeze_panes=(1,1), columns=reordered_cols)
-        df.to_csv("{}-per_sample.tsv".format(out_basename), sep='\t', index=False)
+        df.to_csv("{}-per_sample.tsv".format(out_basename), sep='\t', index=False, columns=reordered_cols)
         subprocess.check_call([
             'R', '--vanilla', '--no-save', '-e',
             """rmarkdown::render('/docker/covid_seq_report-by_collaborator.Rmd',
