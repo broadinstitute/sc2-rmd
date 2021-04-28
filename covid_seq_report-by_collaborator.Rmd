@@ -218,7 +218,7 @@ A "root-to-tip plot" plots the genetic distance of each sample from Wuhan Hu-1 a
 
 \newpage
 
-# Phylogenetic Clades and Variants
+# Phylogenetic Clades and Variants by sample collection date
 
 ### Reportable Variants of Concern (VoCs) by CDC epiweek of sample collection
 
@@ -264,6 +264,60 @@ CDC definitions of Variants of Concern (VoCs) and Variants of Interest (VoIs) ar
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.width=6, fig.height=3}
 ggplot(subset(df_collection_weeks, genome_status %in% c("submittable", "failed_annotation")), height=3, width=6, units='in') +
+  geom_histogram(aes(epiweek_end, fill=nextclade_clade)) +
+  scale_fill_brewer(palette='Set3')
+```
+
+This shows the breakdown of major phylogenetic clades over time, using the Nextclade naming system. Variants of Concern (VoCs) are highlighted as specially named Nextclade clades. Nextclade clade 20I/501Y.V1 corresponds to PANGO lineage B.1.1.7, 20H/501Y.V2 corresponds to B.1.351, and 20J/501Y.V3 corresponds to P.1. At this time, no other VoC or VoI lineages have dedicated Nextclade definitions.
+
+\newpage
+
+# Phylogenetic Clades and Variants by sequencing date
+
+### Reportable Variants of Concern (VoCs) by CDC epiweek of sequencing
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+df_run_weeks %>%
+  subset(genome_status %in% c("submittable", "failed_annotation")) %>%
+  subset(pango_lineage %in% reportable_vocs) %>%
+  subset(!is.na(epiweek_end)) -> x
+if(nrow(x) > 0) {
+  x %>%
+    ddply(.(epiweek_end,pango_lineage), .drop=FALSE, summarise, n=length(sample)) %>%
+    pivot_wider(names_from=pango_lineage, values_from=n, values_fill=0, names_sort=TRUE) %>%
+    rename(Sequencing_epiweek_ending = epiweek_end) -> vocs_by_week
+} else {
+  vocs_by_week <- data.frame(matrix(ncol = 1, nrow = 0))
+  colnames(vocs_by_week) <- 'Sequencing epiweek ending'
+}
+kable(vocs_by_week, col.names = gsub("[_]", " ", names(vocs_by_week)))
+```
+
+### Variants of Interest (VoIs) by CDC epiweek of sequencing
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+df_run_weeks %>%
+  subset(genome_status %in% c("submittable", "failed_annotation")) %>%
+  subset(pango_lineage %in% reportable_vois) %>%
+  subset(!is.na(epiweek_end)) -> x
+if(nrow(x) > 0) {
+  x %>%
+    ddply(.(epiweek_end,pango_lineage), .drop=FALSE, summarise, n=length(sample)) %>%
+    pivot_wider(names_from=pango_lineage, values_from=n, values_fill=0, names_sort=TRUE) %>%
+    rename(Sequencing_epiweek_ending = epiweek_end) -> vois_by_week
+} else {
+  vois_by_week <- data.frame(matrix(ncol = 1, nrow = 0))
+  colnames(vois_by_week) <- 'Sequencing epiweek ending'
+}
+kable(vois_by_week, col.names = gsub("[_]", " ", names(vois_by_week)))
+```
+
+CDC definitions of Variants of Concern (VoCs) and Variants of Interest (VoIs) are available at: \texttt{https://www.cdc.gov/coronavirus/2019-ncov/cases-updates/variant-surveillance/variant-info.html}
+
+### Nextclade classifications vs sequencing date
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.width=6, fig.height=3}
+ggplot(subset(df_run_weeks, genome_status %in% c("submittable", "failed_annotation")), height=3, width=6, units='in') +
   geom_histogram(aes(epiweek_end, fill=nextclade_clade)) +
   scale_fill_brewer(palette='Set3')
 ```
