@@ -21,7 +21,7 @@ def load_data(assemblies_tsv, collab_tsv, min_unambig, min_date, max_date):
         collab_ids = pd.read_csv(collab_tsv, sep='\t').dropna(how='all')[list(['external_id', 'collaborator_id'])]
         collab_ids.columns = ['sample', 'collaborator_id']
     else:
-        collab_ids = pd.DataFrame(columns = ['sample', 'collaborator_id']) 
+        collab_ids = None
 
     # format dates properly
     df_assemblies = df_assemblies.loc[
@@ -83,7 +83,8 @@ def load_data(assemblies_tsv, collab_tsv, min_unambig, min_date, max_date):
         df_assemblies.loc[:,'sample_age_at_runtime'] = list(x.days for x in df_assemblies.loc[:,'run_date'] - df_assemblies.loc[:,'collection_date'])
 
     # join column: collaborator_id
-    df_assemblies = df_assemblies.merge(collab_ids, on='sample', how='left', validate='one_to_one')
+    if collab_ids:
+        df_assemblies = df_assemblies.merge(collab_ids, on='sample', how='left', validate='one_to_one')
 
     return df_assemblies
 
