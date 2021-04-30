@@ -83,7 +83,7 @@ def load_data(assemblies_tsv, collab_tsv, min_unambig, min_date, max_date):
         df_assemblies.loc[:,'sample_age_at_runtime'] = list(x.days for x in df_assemblies.loc[:,'run_date'] - df_assemblies.loc[:,'collection_date'])
 
     # join column: collaborator_id
-    if collab_ids:
+    if collab_ids is not None:
         df_assemblies = df_assemblies.merge(collab_ids, on='sample', how='left', validate='one_to_one')
 
     return df_assemblies
