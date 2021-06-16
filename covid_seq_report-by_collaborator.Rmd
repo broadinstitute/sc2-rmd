@@ -210,7 +210,7 @@ This plot describes the "timeliness" of the sequencing run for the purpose of re
 #rtt_slope <- 0.0008 * as.numeric(as.Date('2021-01-01') - as.Date('2020-01-01'))
 #rtt_intercept <-  rtt_slope * as.numeric(as.Date("2019-12-26"))
 ggplot(df_good, height=3, width=6, units='in') + geom_point(aes(
-  x=collection_date, y=dist_to_ref_snps, color=nextclade_clade), alpha=0.8) + scale_colour_brewer(name='Nextclade Clade', palette='Paired') + geom_smooth(aes(x=collection_date, y=dist_to_ref_snps), method=lm)
+  x=collection_date, y=dist_to_ref_snps, color=nextclade_clade), alpha=0.8) + scale_colour_brewer(name='Nextclade Clade', palette='Paired', direction=-1) + geom_smooth(aes(x=collection_date, y=dist_to_ref_snps), method=lm)
 ```
 
 A "root-to-tip plot" plots the genetic distance of each sample from Wuhan Hu-1 against the date it was collected. It is generally somewhat linear. Outliers on this plot may be indicative of laboratory or metadata errors, or of evolutionarily unusual lineages (such as B.1.1.7).
@@ -265,10 +265,10 @@ CDC definitions of Variants of Concern (VoCs) and Variants of Interest (VoIs) ar
 ```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.width=6, fig.height=3}
 ggplot(subset(df_collection_weeks, genome_status %in% c("submittable", "failed_annotation")), height=3, width=6, units='in') +
   geom_histogram(aes(epiweek_end, fill=nextclade_clade)) +
-  scale_fill_brewer(palette='Set3')
+  scale_fill_brewer(palette='Set3', direction=-1)
 ```
 
-This shows the breakdown of major phylogenetic clades over time, using the Nextclade naming system. Variants of Concern (VoCs) are highlighted as specially named Nextclade clades. Nextclade clade 20I/501Y.V1 corresponds to PANGO lineage B.1.1.7, 20H/501Y.V2 corresponds to B.1.351, and 20J/501Y.V3 corresponds to P.1. At this time, no other VoC or VoI lineages have dedicated Nextclade definitions.
+This shows the breakdown of major phylogenetic clades over time, using the Nextclade naming system. Variants of Concern (VoCs) are highlighted as specially named Nextclade clades. Nextclade clade 20I/Alpha corresponds to PANGO lineage B.1.1.7, 20H/Beta corresponds to B.1.351, 20J/Gamma corresponds to P.1, 21A/Delta corresponds to B.1.617.2, and 21C/Epsilon corresponds to both B.1.427 and B.1.429. Additionally, 21D/Eta corresponds to B.1.525, 21F/Iota corresponds to B.1.526. More detailed WHO definitions can be found at: \texttt{https://www.who.int/en/activities/tracking-SARS-CoV-2-variants/}
 
 \newpage
 
@@ -319,7 +319,7 @@ CDC definitions of Variants of Concern (VoCs) and Variants of Interest (VoIs) ar
 ```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.width=6, fig.height=3}
 ggplot(subset(df_run_weeks, genome_status %in% c("submittable", "failed_annotation")), height=3, width=6, units='in') +
   geom_histogram(aes(epiweek_end, fill=nextclade_clade)) +
-  scale_fill_brewer(palette='Set3')
+  scale_fill_brewer(palette='Set3', direction=-1)
 ```
 
-This shows the breakdown of major phylogenetic clades over time, using the Nextclade naming system. Variants of Concern (VoCs) are highlighted as specially named Nextclade clades. Nextclade clade 20I/501Y.V1 corresponds to PANGO lineage B.1.1.7, 20H/501Y.V2 corresponds to B.1.351, and 20J/501Y.V3 corresponds to P.1. At this time, no other VoC or VoI lineages have dedicated Nextclade definitions.
+This shows the breakdown of major phylogenetic clades over time, using the Nextclade naming system. Variants of Concern (VoCs) are highlighted as specially named Nextclade clades. Nextclade clade 20I/Alpha corresponds to PANGO lineage B.1.1.7, 20H/Beta corresponds to B.1.351, 20J/Gamma corresponds to P.1, 21A/Delta corresponds to B.1.617.2, and 21C/Epsilon corresponds to both B.1.427 and B.1.429. Additionally, 21D/Eta corresponds to B.1.525, 21F/Iota corresponds to B.1.526. More detailed WHO definitions can be found at: \texttt{https://www.who.int/en/activities/tracking-SARS-CoV-2-variants/}
