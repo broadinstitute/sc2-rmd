@@ -1,5 +1,7 @@
 # SARS-CoV-2 Rmarkdown reporting tools
 
+[![Docker Repository on Quay](https://quay.io/repository/broadinstitute/sc2-rmd/status "Docker Repository on Quay")](https://quay.io/repository/broadinstitute/sc2-rmd)
+
 This repository provides parameterized rmarkdown templates, wrapper scripts, and WDL workflows for producing routine (e.g. weekly) reports to US state and local public health agencies on SARS-CoV-2 sequencing activities from your viral sequencing lab. Defaults are currently configured for the Broad Institute.
 
 The required inputs include:
