@@ -97,7 +97,8 @@ def main(args):
     collaborators_all = list(str(x) for x in df_assemblies['collected_by'].unique() if x and not pd.isna(x))
     purposes_all = list(str(x) for x in df_assemblies['purpose_of_sequencing'].unique() if x and not pd.isna(x))
 
-    sequencing_lab_sanitized = args.sequencing_lab.replace(' ', '_')
+    sequencing_lab_sanitized = "".join([x if x.isalnum() else '_' for x in args.sequencing_lab])
+
     date_string = datetime.date.today().strftime("%Y_%m_%d")
 
     # prep output columns
@@ -180,7 +181,7 @@ def main(args):
     # per-collab PDFs and XLSXs
     for collab in collaborators_all:
         print("making reports for collaborator '{}'".format(collab))
-        collab_sanitized = collab.replace(' ', '_')
+        collab_sanitized = "".join([x if x.isalnum() else '_' for x in collab])
         out_basename = "report-{}-by_lab-{}-{}".format(
             sequencing_lab_sanitized, collab_sanitized, date_string)
         df = df_assemblies.query('collected_by == "{}"'.format(collab))
