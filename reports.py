@@ -173,7 +173,7 @@ def main(args):
                     voi_list = '{}',
                     min_unambig = {:d}))
             """.format(out_basename,
-                state, os.path.join(os.getcwd(), out_basename),
+                state.replace("'", "").replace('"', ''), os.path.join(os.getcwd(), out_basename),
                 args.sequencing_lab, args.intro_blurb,
                 args.voc_list, args.voi_list, args.min_unambig),
             ])
@@ -202,7 +202,7 @@ def main(args):
                     voi_list = '{}',
                     min_unambig = {:d}))
             """.format(out_basename,
-                collab, os.path.join(os.getcwd(), out_basename),
+                collab.replace("'", "").replace('"', ''), os.path.join(os.getcwd(), out_basename),
                 args.sequencing_lab, args.intro_blurb,
                 args.voc_list, args.voi_list, args.min_unambig),
             ])
