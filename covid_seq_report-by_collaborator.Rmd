@@ -13,15 +13,15 @@ params:
   assemblies_tsv: "assemblies.tsv"
   date: !r Sys.Date()
   min_unambig: 24000
-  voc_list: "B.1.1.7,B.1.351,P.1,B.1.427,B.1.429,B.1.429.1"
-  voi_list: "B.1.525,B.1.526,P.2"
+  voc_list: "20H (Beta, V2);20I (Alpha, V1);20J (Gamma, V3);21A (Delta)"
+  voi_list: "21B (Kappa);21C (Epsilon);21D (Eta);21E (Theta);21F (Iota);21G (Lambda);21H (Mu)"
 ---
 
 ```{r, setup, echo=FALSE, message=FALSE, warning=FALSE}
 #knitr::opts_chunk$set(echo = params$printcode)
 
-reportable_vocs <- unlist(strsplit(params$voc_list, ","))
-reportable_vois <- unlist(strsplit(params$voi_list, ","))
+reportable_vocs <- unlist(strsplit(params$voc_list, ";"))
+reportable_vois <- unlist(strsplit(params$voi_list, ";"))
 
 library(knitr)
 library(ggplot2)
@@ -81,8 +81,8 @@ earliest_rundate <- min(df_assemblies$run_date)
 latest_rundate <- max(df_assemblies$run_date)
 latest_epiweek <- max(df_run_weeks$epiweek_end)
 
-df_run_weeks$is_voc <- df_run_weeks$pango_lineage %in% reportable_vocs
-df_run_weeks$is_voi <- df_run_weeks$pango_lineage %in% reportable_vois
+df_run_weeks$is_voc <- df_run_weeks$nextclade_clade %in% reportable_vocs
+df_run_weeks$is_voi <- df_run_weeks$nextclade_clade %in% reportable_vois
 df_run_weeks %>%
   subset(epiweek_end == latest_epiweek) ->
   df_latest_week
@@ -225,12 +225,12 @@ A "root-to-tip plot" plots the genetic distance of each sample from Wuhan Hu-1 a
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 df_collection_weeks %>%
   subset(genome_status %in% c("submittable", "failed_annotation")) %>%
-  subset(pango_lineage %in% reportable_vocs) %>%
+  subset(nextclade_clade %in% reportable_vocs) %>%
   subset(!is.na(epiweek_end)) -> x
 if(nrow(x) > 0) {
   x %>%
-    ddply(.(epiweek_end,pango_lineage), .drop=FALSE, summarise, n=length(sample)) %>%
-    pivot_wider(names_from=pango_lineage, values_from=n, values_fill=0, names_sort=TRUE) %>%
+    ddply(.(epiweek_end,nextclade_clade), .drop=FALSE, summarise, n=length(sample)) %>%
+    pivot_wider(names_from=nextclade_clade, values_from=n, values_fill=0, names_sort=TRUE) %>%
     rename(Collection_epiweek_ending = epiweek_end) -> vocs_by_week
 } else {
   vocs_by_week <- data.frame(matrix(ncol = 1, nrow = 0))
@@ -244,12 +244,12 @@ kable(vocs_by_week, col.names = gsub("[_]", " ", names(vocs_by_week)))
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 df_collection_weeks %>%
   subset(genome_status %in% c("submittable", "failed_annotation")) %>%
-  subset(pango_lineage %in% reportable_vois) %>%
+  subset(nextclade_clade %in% reportable_vois) %>%
   subset(!is.na(epiweek_end)) -> x
 if(nrow(x) > 0) {
   x %>%
-    ddply(.(epiweek_end,pango_lineage), .drop=FALSE, summarise, n=length(sample)) %>%
-    pivot_wider(names_from=pango_lineage, values_from=n, values_fill=0, names_sort=TRUE) %>%
+    ddply(.(epiweek_end,nextclade_clade), .drop=FALSE, summarise, n=length(sample)) %>%
+    pivot_wider(names_from=nextclade_clade, values_from=n, values_fill=0, names_sort=TRUE) %>%
     rename(Collection_epiweek_ending = epiweek_end) -> vois_by_week
 } else {
   vois_by_week <- data.frame(matrix(ncol = 1, nrow = 0))
@@ -279,12 +279,12 @@ This shows the breakdown of major phylogenetic clades over time, using the Nextc
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 df_run_weeks %>%
   subset(genome_status %in% c("submittable", "failed_annotation")) %>%
-  subset(pango_lineage %in% reportable_vocs) %>%
+  subset(nextclade_clade %in% reportable_vocs) %>%
   subset(!is.na(epiweek_end)) -> x
 if(nrow(x) > 0) {
   x %>%
-    ddply(.(epiweek_end,pango_lineage), .drop=FALSE, summarise, n=length(sample)) %>%
-    pivot_wider(names_from=pango_lineage, values_from=n, values_fill=0, names_sort=TRUE) %>%
+    ddply(.(epiweek_end,nextclade_clade), .drop=FALSE, summarise, n=length(sample)) %>%
+    pivot_wider(names_from=nextclade_clade, values_from=n, values_fill=0, names_sort=TRUE) %>%
     rename(Sequencing_epiweek_ending = epiweek_end) -> vocs_by_week
 } else {
   vocs_by_week <- data.frame(matrix(ncol = 1, nrow = 0))
@@ -298,12 +298,12 @@ kable(vocs_by_week, col.names = gsub("[_]", " ", names(vocs_by_week)))
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 df_run_weeks %>%
   subset(genome_status %in% c("submittable", "failed_annotation")) %>%
-  subset(pango_lineage %in% reportable_vois) %>%
+  subset(nextclade_clade %in% reportable_vois) %>%
   subset(!is.na(epiweek_end)) -> x
 if(nrow(x) > 0) {
   x %>%
-    ddply(.(epiweek_end,pango_lineage), .drop=FALSE, summarise, n=length(sample)) %>%
-    pivot_wider(names_from=pango_lineage, values_from=n, values_fill=0, names_sort=TRUE) %>%
+    ddply(.(epiweek_end,nextclade_clade), .drop=FALSE, summarise, n=length(sample)) %>%
+    pivot_wider(names_from=nextclade_clade, values_from=n, values_fill=0, names_sort=TRUE) %>%
     rename(Sequencing_epiweek_ending = epiweek_end) -> vois_by_week
 } else {
   vois_by_week <- data.frame(matrix(ncol = 1, nrow = 0))
